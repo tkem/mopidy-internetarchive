@@ -18,7 +18,8 @@ Mopidy-InternetArchive
    :target: https://coveralls.io/r/tkem/mopidy-internetarchive?branch=master
    :alt: Test coverage
 
-Mopidy extension for streaming music and audio from Internet Archive
+`Mopidy <http://www.mopidy.com/>`_ extension for playing music and
+audio from the `Internet Archive <http://archive.org>_.`
 
 
 Installation
@@ -28,18 +29,32 @@ Install by running::
 
     pip install Mopidy-InternetArchive
 
-Or, if available, install the Debian/Ubuntu package from `apt.mopidy.com
-<http://apt.mopidy.com/>`_.
+Or install Debian/Ubuntu packages for `Mopidy-InternetArchive releases
+<https://github.com/tkem/mopidy-internetarchive/releases>`_.
 
 
 Configuration
 =============
 
-Before starting Mopidy, you must add configuration for
-Mopidy-InternetArchive to your Mopidy configuration file::
+Configuration items are very much subject to change at this point, so
+be warned before trying any of these::
 
     [internetarchive]
-    # TODO: Add example of extension config
+
+    # archive.org base URL; change to https if you like
+    base_url = http://archive.org
+
+    # limit search to specific collections, e.g. etree
+    collection =
+
+    # limit search to specific mediatypes, e.g. etree
+    mediatype = audio, etree
+
+    # streaming formats in order of preference
+    format = VBR MP3, MP3, Ogg Vorbis, Flac
+
+    # limit number of search results if set
+    limit =
 
 
 Project resources
@@ -53,7 +68,7 @@ Project resources
 Changelog
 =========
 
-v0.0.1 (UNRELEASED)
+v0.1.0 (2014-01-24)
 ----------------------------------------
 
 - Initial release.
