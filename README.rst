@@ -10,14 +10,6 @@ Mopidy-InternetArchive
     :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Number of PyPI downloads
 
-.. image:: https://travis-ci.org/tkem/mopidy-internetarchive.png?branch=master
-    :target: https://travis-ci.org/tkem/mopidy-internetarchive
-    :alt: Travis CI build status
-
-.. image:: https://coveralls.io/repos/tkem/mopidy-internetarchive/badge.png?branch=master
-   :target: https://coveralls.io/r/tkem/mopidy-internetarchive?branch=master
-   :alt: Test coverage
-
 `Mopidy <http://www.mopidy.com/>`_ extension for playing music and
 audio from the `Internet Archive <http://archive.org>`_.
 
