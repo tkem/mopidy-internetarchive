@@ -28,10 +28,13 @@ class BackendTest(unittest.TestCase):
             'internetarchive:item1'
         )
 
+    def test_make_artist_uri(self):
+        pass  # TODO: write tests
+
     def test_make_search_uri(self):
         self.assertEqual(
             self.backend.make_search_uri('foo bar'),
-            'internetarchive:?foo bar'
+            'internetarchive:?foo%20bar'
         )
 
     def test_parse_uri(self):
@@ -50,6 +53,6 @@ class BackendTest(unittest.TestCase):
             dict(empty, query='foo')
         )
         self.assertEqual(
-            self.backend.parse_uri('internetarchive:?foo bar'),
+            self.backend.parse_uri('internetarchive:?foo%20bar'),
             dict(empty, query='foo bar')
         )

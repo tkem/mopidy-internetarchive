@@ -1,23 +1,12 @@
-import logging
-import re
+from __future__ import unicode_literals
 
-from mopidy.backends import base
-from mopidy.models import Track
-
-logger = logging.getLogger('mopidy.backends.internetarchive')
-
-URI_RE = re.compile('^internetarchive://([^/]+)/([^/]+)$')
+from mopidy import backend
 
 
-class InternetArchivePlaybackProvider(base.BasePlaybackProvider):
+class InternetArchivePlaybackProvider(backend.PlaybackProvider):
 
     def play(self, track):
-        if not track.uri:
-            return False
-        obj = self.backend.parse_uri(track.uri)
-        if not obj:
-            return False
-        track = Track(
-            uri=self.backend.client.get_download_url(obj['path'], obj['fragment'])
-        )
+        u = self.backend.parse_uri(track.uri)
+        uri = self.backend.client.get_download_url(u['path'], u['fragment'])
+        track = track.copy(uri=uri)
         return super(InternetArchivePlaybackProvider, self).play(track)

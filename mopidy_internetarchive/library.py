@@ -1,45 +1,63 @@
 from __future__ import unicode_literals
+
 import logging
 import re
 
 from collections import defaultdict
 
-from mopidy.backends import base
+from mopidy import backend
 from mopidy.models import SearchResult, Track, Album, Artist
 
-logger = logging.getLogger('mopidy.backends.internetarchive')
+
+logger = logging.getLogger(__name__)
 
 DATE_RE = re.compile(r"(\d{4})(?:-(\d{2})-(\d{2}))?")
 
+SEARCH_FIELDS = ['identifier', 'title', 'creator', 'date', 'publicdate']
 
-class InternetArchiveLibraryProvider(base.BaseLibraryProvider):
+
+class InternetArchiveLibraryProvider(backend.LibraryProvider):
+
     def __init__(self, backend, config):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
         self.config = config
         self.formats = [fmt.lower() for fmt in config['format']]
 
     def lookup(self, uri):
+        client = self.backend.client
         try:
-            obj = self.backend.parse_uri(uri)
-            if obj['query']:
-                items = self.client.search(obj['query'], rows=self.config['limit']).docs
+            u = self.backend.parse_uri(uri)
+            if u['query']:
+                result = client.search(
+                    u['query'],
+                    fields=['identifier'],
+                    rows=self.config['limit'])
+                items = [client.metadata(doc['identifier']) for doc in result]
+            elif u['path']:
+                items = [client.metadata(u['path'])]
             else:
-                items = [self.backend.client.get_item(obj['path'])]
+                logger.error('invalid uri "%s"', uri)
+                return []
             tracks = []
             for item in items:
-                tracks += self._item_to_tracks(item, obj['fragment'])
+                tracks += self._item_to_tracks(item, u['fragment'])
             return tracks
 
         except Exception as error:
-            logger.error(u'Failed to lookup %s: %s', uri, error)
+            logger.error('Failed to lookup %s: %s', uri, error)
             return []
 
     def search(self, query=None, uris=None):
         if not query:
             return
-        result = self.backend.client.search(self._query_to_string(query), rows=self.config['limit'])
-        albums = [self._metadata_to_album(i) for i in result.docs]
-        return SearchResult(uri=self.backend.make_search_uri(result.query), albums=albums)
+        result = self.backend.client.search(
+            self._query_to_string(query),
+            fields=SEARCH_FIELDS,
+            rows=self.config['limit'])
+        albums = [self._metadata_to_album(doc) for doc in result.docs]
+        return SearchResult(
+            uri=self.backend.make_search_uri(result.query),
+            albums=albums)
 
     def _query_to_string(self, query):
         terms = []
@@ -53,7 +71,7 @@ class InternetArchiveLibraryProvider(base.BaseLibraryProvider):
                 terms.append('creator:' + self._query_value_to_string(value))
             elif field == 'date':
                 terms.append('date:' + value[0])
-            # TODO: extra fields as filter
+            # TODO: other fields as filter
         for k in ('collection', 'mediatype', 'format'):
             if self.config[k]:
                 terms.append(k + ':(' + ' OR '.join(self.config[k]) + ')')
@@ -75,7 +93,7 @@ class InternetArchiveLibraryProvider(base.BaseLibraryProvider):
 
     def _creator_to_artists(self, creator):
         if not creator:
-            creator = ''
+            creator = 'unknown'
         if not hasattr(creator, '__iter__'):
             creator = [creator]
         return [self._creator_to_artist(i) for i in creator]
@@ -87,6 +105,10 @@ class InternetArchiveLibraryProvider(base.BaseLibraryProvider):
         )
 
     def _item_to_tracks(self, item, filename=None):
+        if not item:
+            logger.error('null item')
+            return []
+
         ident = item['metadata']['identifier']
         album = self._metadata_to_album(item['metadata'])
         byname = {f['name']: f for f in item['files']}
@@ -140,7 +162,11 @@ class InternetArchiveLibraryProvider(base.BaseLibraryProvider):
         hms = length.split(':', 2)
         while len(hms) < 3:
             hms.insert(0, 0)
-        return int(((int(hms[0]) * 60 + int(hms[1])) * 60 + float(hms[2])) * 1000)
+        return int((
+            int(hms[0]) * 3600 +
+            int(hms[1]) * 60 +
+            float(hms[2])
+        ) * 1000)
 
     def _filter_formats(self, files):
         byformat = defaultdict(list)

@@ -2,14 +2,14 @@ from __future__ import unicode_literals
 import logging
 import requests
 
-logger = logging.getLogger('mopidy.backends.internetarchive.client')
+logger = logging.getLogger(__name__)
 
 
 class InternetArchiveClient(object):
 
     def __init__(self, base_url='http://archive.org'):
         self.search_url = base_url + '/advancedsearch.php'
-        self.metadata_url = base_url + '/metadata/'
+        self.metadata_url = base_url + '/metadata'
         self.download_url = base_url + '/download'
         self.session = requests.Session()  # TODO: timeout, etc.
 
@@ -21,38 +21,34 @@ class InternetArchiveClient(object):
             'start': start,
             'output': 'json'
         })
-        logger.debug("URL: %s", response.url)
-        return self.SearchResult(response)
+        logger.debug("search URL: %s", response.url)
+
+        if not response.content:
+            raise self.SearchError(query)
+        return self.SearchResult(response.json())
 
     def metadata(self, path):
-        url = self.metadata_url + path
+        url = '%s/%s' % (self.metadata_url, path)
         response = self.session.get(url)
-        if not response.content:
-            raise Exception('No content in response')
-        # FIXME: unquote "\'", etc.
-        return response.json()
+        logger.debug("metadata URL: %s", response.url)
 
-    def get_item(self, identifier, *subitems):
-        url = self.metadata_url + identifier + '/' + '/'.join(subitems)
-        response = self.session.get(url)
-        logger.debug("JSON: %s", repr(response))
-        # FIXME: handle error/empty
-        item = response.json()
-        if 'result' in item:
-            return item['result']
+        metadata = response.json()
+        if not metadata or 'error' in metadata:
+            return None
+        # only subitems produce { "result": ... }
+        if 'result' in metadata:
+            return metadata['result']
         else:
-            return item
+            return metadata
 
     def get_download_url(self, identifier, filename):
         return '%s/%s/%s' % (self.download_url, identifier, filename)
 
     class SearchResult(object):
-        def __init__(self, response):
-            if not response.content:
-                raise Exception('No content in response')
-            result = response.json()
+
+        def __init__(self, result):
             self.query = result['responseHeader']['params']['q']
-            self.found = result['response']['numFound']
+            self.num_found = result['response']['numFound']
             self.start = result['response']['start']
             self.docs = result['response']['docs']
 
@@ -61,6 +57,13 @@ class InternetArchiveClient(object):
 
         def __iter__(self):
             return iter(self.docs)
+
+    class SearchError(Exception):
+
+        def __init__(self, query):
+            msg = 'Invalid query: ' + query
+            super(InternetArchiveClient.SearchError, self).__init__(msg)
+
 
 if __name__ == '__main__':
     import argparse
