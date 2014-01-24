@@ -19,7 +19,7 @@ Mopidy-InternetArchive
    :alt: Test coverage
 
 `Mopidy <http://www.mopidy.com/>`_ extension for playing music and
-audio from the `Internet Archive <http://archive.org>_.`
+audio from the `Internet Archive <http://archive.org>`_.
 
 
 Installation
