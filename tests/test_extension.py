@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import unittest
 
-from mopidy_internetarchive import Extension, frontend as frontend_lib
+from mopidy_internetarchive import Extension
 
 
 class ExtensionTest(unittest.TestCase):
@@ -11,7 +11,6 @@ class ExtensionTest(unittest.TestCase):
         ext = Extension()
 
         config = ext.get_default_config()
-
         self.assertIn('[internetarchive]', config)
         self.assertIn('enabled = true', config)
 
@@ -19,9 +18,6 @@ class ExtensionTest(unittest.TestCase):
         ext = Extension()
 
         schema = ext.get_config_schema()
-
-        # TODO Test the content of your config schema
-        #self.assertIn('username', schema)
-        #self.assertIn('password', schema)
-
-    # TODO Write more tests
+        self.assertIn('collection', schema)
+        self.assertIn('mediatype', schema)
+        self.assertIn('format', schema)
