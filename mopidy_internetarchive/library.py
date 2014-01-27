@@ -8,10 +8,10 @@ from collections import defaultdict
 from mopidy import backend
 from mopidy.models import SearchResult, Track, Album, Artist
 
+from .translators import creator_to_artists, parse_length, parse_date
+
 
 logger = logging.getLogger(__name__)
-
-DATE_RE = re.compile(r"(\d{4})(?:-(\d{2})-(\d{2}))?")
 
 SEARCH_FIELDS = ['identifier', 'title', 'creator', 'date', 'publicdate']
 
@@ -72,9 +72,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             elif field == 'date':
                 terms.append('date:' + value[0])
             # TODO: other fields as filter
-        for k in ('collections', 'mediatypes', 'formats'):
-            if self.config[k]:
-                terms.append(k + ':(' + ' OR '.join(self.config[k]) + ')')
+        terms.append('collection:(' + ' OR '.join(self.config['collections']) + ')')
+        terms.append('mediatype:(' + ' OR '.join(self.config['mediatypes']) + ')')
+        terms.append('format:(' + ' OR '.join(self.config['formats']) + ')')
         return ' '.join(terms)
 
     def _query_value_to_string(self, value):
@@ -87,21 +87,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return Album(
             uri=self.backend.make_album_uri(meta['identifier']),
             name=meta.get('title', meta['identifier']),
-            artists=self._creator_to_artists(meta.get('creator')),
-            date=self._date_to_iso(meta.get('date', meta.get('publicdate')))
-        )
-
-    def _creator_to_artists(self, creator):
-        if not creator:
-            creator = 'unknown'
-        if not hasattr(creator, '__iter__'):
-            creator = [creator]
-        return [self._creator_to_artist(i) for i in creator]
-
-    def _creator_to_artist(self, creator):
-        return Artist(
-            uri=self.backend.make_artist_uri(creator),
-            name=creator
+            artists=creator_to_artists(meta.get('creator')),
+            date=parse_date(meta.get('date', meta.get('publicdate')))
         )
 
     def _item_to_tracks(self, item, filename=None):
@@ -135,38 +122,17 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 'last_modified': int(f['mtime'])
             }
             if 'creator' in f:
-                kwargs['artists'] = self._creator_to_artists(f['creator'])
+                kwargs['artists'] = creator_to_artists(f['creator'])
             if 'track' in f:
                 kwargs['track_no'] = int(f['track'])
             if 'date' in f:
-                kwargs['date'] = self._date_to_iso(f['date'])
+                kwargs['date'] = parse_date(f['date'])
             if 'length' in f:
-                kwargs['length'] = self._length_to_ms(f['length'])
+                kwargs['length'] = parse_length(f['length'])
             if 'bitrate' in f:
                 kwargs['bitrate'] = int(float(f['bitrate']))
             tracks.append(Track(**kwargs))
         return sorted(tracks, key=lambda t: t.track_no or t.name)
-
-    def _date_to_iso(self, date):
-        if not date:
-            return None
-        match = DATE_RE.match(date)
-        if match:
-            return '-'.join(match.groups())
-        else:
-            return None
-
-    def _length_to_ms(self, length):
-        if not length:
-            return None
-        hms = length.split(':', 2)
-        while len(hms) < 3:
-            hms.insert(0, 0)
-        return int((
-            int(hms[0]) * 3600 +
-            int(hms[1]) * 60 +
-            float(hms[2])
-        ) * 1000)
 
     def _filter_formats(self, files):
         byformat = defaultdict(list)
