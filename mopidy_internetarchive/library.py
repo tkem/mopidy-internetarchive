@@ -6,7 +6,7 @@ import re
 from collections import defaultdict
 
 from mopidy import backend
-from mopidy.models import SearchResult, Track, Album, Artist
+from mopidy.models import SearchResult, Track, Album, Artist, Ref
 
 from .translators import creator_to_artists, parse_length, parse_date
 
@@ -18,10 +18,22 @@ SEARCH_FIELDS = ['identifier', 'title', 'creator', 'date', 'publicdate']
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
+    root_directory = Ref(
+        uri='internetarchive:/browser',
+        name='Internet Archive',
+        type=Ref.DIRECTORY)
+
+
     def __init__(self, backend, config):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
         self.config = config
         self.formats = [fmt.lower() for fmt in config['formats']]
+
+
+    def browse(self, path):
+        raise Exception('browse:' + path)
+        return [self.root_directory]
+
 
     def lookup(self, uri):
         client = self.backend.client
