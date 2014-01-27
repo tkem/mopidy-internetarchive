@@ -18,6 +18,6 @@ class ExtensionTest(unittest.TestCase):
         ext = Extension()
 
         schema = ext.get_config_schema()
-        self.assertIn('collection', schema)
-        self.assertIn('mediatype', schema)
-        self.assertIn('format', schema)
+        self.assertIn('collections', schema)
+        self.assertIn('mediatypes', schema)
+        self.assertIn('formats', schema)

@@ -14,12 +14,12 @@ TEST_DATE = '1963-08-28'
 class LibraryTest(unittest.TestCase):
     config = {
         'internetarchive': {
-            # FIXME: file url for tests
             'base_url': 'http://archive.org',
-            'collection': None,
-            'mediatype': ['etree', 'audio'],
-            'format': 'MP3',
-            'limit': None
+            'collections': ['etree', 'audio'],
+            'mediatypes': ['etree', 'audio'],
+            'formats': ['MP3'],
+            'search_limit': None,
+            'browse_limit': None
         }
     }
 

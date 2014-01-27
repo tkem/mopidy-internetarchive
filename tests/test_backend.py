@@ -7,9 +7,10 @@ from mopidy_internetarchive.backend import InternetArchiveBackend
 class BackendTest(unittest.TestCase):
     config = {
         'internetarchive': {
-            # FIXME: file url for tests
             'base_url': 'http://archive.org',
-            'format': ['MP3']
+            'collections': ['etree', 'audio'],
+            'mediatypes': ['etree', 'audio'],
+            'formats': ['MP3']
         }
     }
 

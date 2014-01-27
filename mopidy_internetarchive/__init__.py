@@ -21,10 +21,11 @@ class Extension(ext.Extension):
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
         schema['base_url'] = config.String()
-        schema['collection'] = config.List(optional=True)
-        schema['mediatype'] = config.List()
-        schema['format'] = config.List()
-        schema['limit'] = config.Integer(minimum=1, optional=True)
+        schema['collections'] = config.List()
+        schema['mediatypes'] = config.List()
+        schema['formats'] = config.List()
+        schema['search_limit'] = config.Integer(minimum=1, optional=True)
+        schema['browse_limit'] = config.Integer(minimum=1, optional=True)
         return schema
 
     def setup(self, registry):

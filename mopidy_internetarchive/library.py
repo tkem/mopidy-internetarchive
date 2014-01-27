@@ -21,7 +21,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def __init__(self, backend, config):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
         self.config = config
-        self.formats = [fmt.lower() for fmt in config['format']]
+        self.formats = [fmt.lower() for fmt in config['formats']]
 
     def lookup(self, uri):
         client = self.backend.client
@@ -31,7 +31,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 result = client.search(
                     u['query'],
                     fields=['identifier'],
-                    rows=self.config['limit'])
+                    rows=self.config['search_limit'])
                 items = [client.metadata(doc['identifier']) for doc in result]
             elif u['path']:
                 items = [client.metadata(u['path'])]
@@ -53,7 +53,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         result = self.backend.client.search(
             self._query_to_string(query),
             fields=SEARCH_FIELDS,
-            rows=self.config['limit'])
+            rows=self.config['search_limit'])
         albums = [self._metadata_to_album(doc) for doc in result.docs]
         return SearchResult(
             uri=self.backend.make_search_uri(result.query),
@@ -72,7 +72,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             elif field == 'date':
                 terms.append('date:' + value[0])
             # TODO: other fields as filter
-        for k in ('collection', 'mediatype', 'format'):
+        for k in ('collections', 'mediatypes', 'formats'):
             if self.config[k]:
                 terms.append(k + ':(' + ' OR '.join(self.config[k]) + ')')
         return ' '.join(terms)
