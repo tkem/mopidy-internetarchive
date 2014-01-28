@@ -65,7 +65,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 rows=self.config['browse_limit'])
             return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
 
-        item = self.backend.client.metadata(uriparts.path)
+        item = self.backend.client.getitem(uriparts.path)
         if item['metadata']['mediatype'] == 'collection':
             result = self.backend.client.search(
                 'mediatype:etree AND collection:%s' % uriparts.path,
@@ -84,7 +84,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
         try:
             uriparts = urisplit(uri)
-            item = self.backend.client.metadata(uriparts.path)
+            item = self.backend.client.getitem(uriparts.path)
             if uriparts.fragment:
                 files = _filter_by_name(item['files'], uriparts.fragment)
             else:
