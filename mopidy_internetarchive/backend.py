@@ -38,7 +38,6 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
             audio=audio, backend=self)
         self.uri_schemes = [URI_SCHEME]
 
-
     def make_track_uri(self, identifier, filename):
         uri = '%s:%s#%s' % (URI_SCHEME, quote(identifier), quote(filename))
         logger.debug('track uri [%s, %s] -> %s', identifier, filename, uri)

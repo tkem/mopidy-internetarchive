@@ -13,10 +13,11 @@ class InternetArchiveClient(object):
         self.download_url = base_url + '/download'
         self.session = requests.Session()  # TODO: timeout, etc.
 
-    def search(self, query, fields=None, rows=None, start=None):
+    def search(self, query, fields=None, sort=None, rows=None, start=None):
         response = self.session.get(self.search_url, params={
             'q': query,
             'fl[]': fields,
+            'sort[]': sort,
             'rows': rows,
             'start': start,
             'output': 'json'

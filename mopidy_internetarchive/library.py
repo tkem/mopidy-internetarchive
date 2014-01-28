@@ -1,74 +1,111 @@
 from __future__ import unicode_literals
 
 import logging
-import re
 
 from collections import defaultdict
 
 from mopidy import backend
-from mopidy.models import SearchResult, Track, Album, Artist, Ref
+from mopidy.models import SearchResult, Ref
 
-from .translators import creator_to_artists, parse_length, parse_date
-
+from .translators import item_to_tracks, metadata_to_album
+from .translators import metadata_to_ref, file_to_ref
+from .uritools import uricompose, urisplit
 
 logger = logging.getLogger(__name__)
+
+URI_SCHEMA = 'internetarchive'
 
 SEARCH_FIELDS = ['identifier', 'title', 'creator', 'date', 'publicdate']
 
 
+def _filter_by_name(files, name):
+    for f in files:
+        if f['name'] == name:
+            return [f]
+    return []
+
+
+def _filter_by_format(files, formats):
+    byformat = defaultdict(list)
+    for f in files:
+        byformat[f['format'].lower()].append(f)
+    for fmt in formats:
+        if fmt in byformat:
+            return byformat[fmt]
+        for k in byformat.keys():
+            if k.endswith(fmt):
+                return byformat[k]
+    return []
+
+
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
-    root_directory = Ref(
-        uri='internetarchive:/browser',
-        name='Internet Archive',
-        type=Ref.DIRECTORY)
-
+    root_directory = Ref.directory(
+        uri='internetarchive:',
+        name='Internet Archive')
 
     def __init__(self, backend, config):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
         self.config = config
         self.formats = [fmt.lower() for fmt in config['formats']]
 
+    def browse(self, uri):
+        logger.debug("internetarchive browse: %s", uri)
 
-    def browse(self, path):
-        raise Exception('browse:' + path)
-        return [self.root_directory]
+        if not uri:
+            return [self.root_directory]
 
+        uriparts = urisplit(uri)
+
+        if uri == self.root_directory.uri:
+            result = self.backend.client.search(
+                'mediatype:collection AND collection:etree',
+                fields=['identifier', 'title', 'mediatype'],
+                sort=['downloads desc'],
+                rows=self.config['browse_limit'])
+            return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
+
+        item = self.backend.client.metadata(uriparts.path)
+        if item['metadata']['mediatype'] == 'collection':
+            result = self.backend.client.search(
+                'mediatype:etree AND collection:%s' % uriparts.path,
+                fields=['identifier', 'title', 'mediatype'],
+                rows=self.config['browse_limit'])
+            return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
+        elif item['metadata']['mediatype'] == 'etree':
+            files = _filter_by_format(item['files'], self.formats)
+            logger.debug("got files: %s", repr(files))
+            return [file_to_ref(item, f) for f in files]
+        else:
+            return []
 
     def lookup(self, uri):
-        client = self.backend.client
-        try:
-            u = self.backend.parse_uri(uri)
-            if u['query']:
-                result = client.search(
-                    u['query'],
-                    fields=['identifier'],
-                    rows=self.config['search_limit'])
-                items = [client.metadata(doc['identifier']) for doc in result]
-            elif u['path']:
-                items = [client.metadata(u['path'])]
-            else:
-                logger.error('invalid uri "%s"', uri)
-                return []
-            tracks = []
-            for item in items:
-                tracks += self._item_to_tracks(item, u['fragment'])
-            return tracks
+        logger.debug("internetarchive lookup: %s", uri)
 
+        try:
+            uriparts = urisplit(uri)
+            item = self.backend.client.metadata(uriparts.path)
+            if uriparts.fragment:
+                files = _filter_by_name(item['files'], uriparts.fragment)
+            else:
+                files = _filter_by_format(item['files'], self.formats)
+            return item_to_tracks(item, files)
         except Exception as error:
             logger.error('Failed to lookup %s: %s', uri, error)
             return []
 
     def search(self, query=None, uris=None):
+        logger.debug("internetarchive search: %s", repr(query))
+
         if not query:
             return
         result = self.backend.client.search(
             self._query_to_string(query),
             fields=SEARCH_FIELDS,
             rows=self.config['search_limit'])
-        albums = [self._metadata_to_album(doc) for doc in result.docs]
+        albums = [metadata_to_album(doc) for doc in result.docs]
         return SearchResult(
-            uri=self.backend.make_search_uri(result.query),
+            uri=uricompose(URI_SCHEMA, query=result.query),
             albums=albums)
 
     def _query_to_string(self, query):
@@ -84,9 +121,12 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             elif field == 'date':
                 terms.append('date:' + value[0])
             # TODO: other fields as filter
-        terms.append('collection:(' + ' OR '.join(self.config['collections']) + ')')
-        terms.append('mediatype:(' + ' OR '.join(self.config['mediatypes']) + ')')
-        terms.append('format:(' + ' OR '.join(self.config['formats']) + ')')
+        terms.append('collection:(' +
+                     ' OR '.join(self.config['collections']) + ')')
+        terms.append('mediatype:(' +
+                     ' OR '.join(self.config['mediatypes']) + ')')
+        terms.append('format:(' +
+                     ' OR '.join(self.config['formats']) + ')')
         return ' '.join(terms)
 
     def _query_value_to_string(self, value):
@@ -94,67 +134,3 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return '(' + ' OR '.join(value) + ')'
         else:
             return value
-
-    def _metadata_to_album(self, meta):
-        return Album(
-            uri=self.backend.make_album_uri(meta['identifier']),
-            name=meta.get('title', meta['identifier']),
-            artists=creator_to_artists(meta.get('creator')),
-            date=parse_date(meta.get('date', meta.get('publicdate')))
-        )
-
-    def _item_to_tracks(self, item, filename=None):
-        if not item:
-            logger.error('null item')
-            return []
-
-        ident = item['metadata']['identifier']
-        album = self._metadata_to_album(item['metadata'])
-        byname = {f['name']: f for f in item['files']}
-
-        if filename:
-            files = [f for f in item['files'] if f['name'] == filename]
-        else:
-            files = self._filter_formats(item['files'])
-
-        tracks = []
-        for f in files:
-            if 'original' in f and f['original'] in byname:
-                orig = byname[f['original']]
-                for k in orig:
-                    if not k in f or f[k] in ('', 'tmp'):
-                        f[k] = orig[k]
-                #f = dict(byname[f['original']].items() + f.items())
-            kwargs = {
-                'uri': self.backend.make_track_uri(ident, f['name']),
-                'name': f.get('title', f['name']),
-                'artists': album.artists,
-                'album': album,
-                'date': album.date,
-                'last_modified': int(f['mtime'])
-            }
-            if 'creator' in f:
-                kwargs['artists'] = creator_to_artists(f['creator'])
-            if 'track' in f:
-                kwargs['track_no'] = int(f['track'])
-            if 'date' in f:
-                kwargs['date'] = parse_date(f['date'])
-            if 'length' in f:
-                kwargs['length'] = parse_length(f['length'])
-            if 'bitrate' in f:
-                kwargs['bitrate'] = int(float(f['bitrate']))
-            tracks.append(Track(**kwargs))
-        return sorted(tracks, key=lambda t: t.track_no or t.name)
-
-    def _filter_formats(self, files):
-        byformat = defaultdict(list)
-        for f in files:
-            byformat[f['format'].lower()].append(f)
-        for fmt in self.formats:
-            if fmt in byformat:
-                return byformat[fmt]
-            for k in byformat.keys():
-                if k.endswith(fmt):
-                    return byformat[k]
-        # TODO: random/default format?
-        return []

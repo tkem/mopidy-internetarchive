@@ -65,3 +65,7 @@ def uriunsplit(data):
     if fragment:
         uri += '#' + fragment
     return uri
+
+
+def uricompose(scheme='', authority='', path='', query='', fragment=''):
+    return uriunsplit((scheme, authority, path, query, fragment))
