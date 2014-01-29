@@ -26,3 +26,6 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
         self.playback = InternetArchivePlaybackProvider(
             audio=audio, backend=self)
         self.uri_schemes = [URI_SCHEME]
+
+        if self.config['preload']:
+            self.library.browse(self.library.root_directory.uri)

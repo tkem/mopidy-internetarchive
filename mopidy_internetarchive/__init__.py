@@ -27,6 +27,7 @@ class Extension(ext.Extension):
         schema['sort_order'] = config.List()
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
         schema['browse_limit'] = config.Integer(minimum=1, optional=True)
+        schema['preload'] = config.Boolean()
         schema['cache_size'] = config.Integer(minimum=1)
         schema['cache_ttl'] = config.Integer(minimum=1)
         return schema
