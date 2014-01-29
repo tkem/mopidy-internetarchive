@@ -19,7 +19,9 @@ class LibraryTest(unittest.TestCase):
             'mediatypes': ['etree', 'audio'],
             'formats': ['MP3'],
             'search_limit': None,
-            'browse_limit': None
+            'browse_limit': None,
+            'cache_size': 1,
+            'cache_ttl': 1
         }
     }
 

@@ -5,6 +5,28 @@ import requests
 logger = logging.getLogger(__name__)
 
 
+def cachedmethod(method):
+    def makekey(args, kwargs):
+        return (method.__name__, tuple(sorted(kwargs.items()))) + args
+
+    def wrapper(self, *args, **kwargs):
+        if self.cache is not None:
+            key = makekey(args, kwargs)
+            try:
+                result = self.cache[key]
+                logger.debug("cache hit: %s", key)
+                return result
+            except KeyError:
+                logger.debug("cache miss: %s", key)
+                result = method(self, *args, **kwargs)
+                self.cache[key] = result
+                return result
+            except TypeError:
+                logger.warn("cache fail: %s", key)
+        return method(self, *args, **kwargs)
+    return wrapper
+
+
 class InternetArchiveClient(object):
 
     def __init__(self, base_url='http://archive.org', cache=None):
@@ -14,10 +36,8 @@ class InternetArchiveClient(object):
         self.session = requests.Session()  # TODO: timeout, etc.
         self.cache = cache
 
+    @cachedmethod
     def search(self, query, fields=[], sort=[], rows=None, start=None):
-        key = (query, frozenset(fields), tuple(sort), rows, start)
-        if self.cache and key in self.cache:
-            return self.cache[key]
         response = self.session.get(self.search_url, params={
             'q': query,
             'fl[]': fields,
@@ -26,32 +46,24 @@ class InternetArchiveClient(object):
             'start': start,
             'output': 'json'
         })
-        logger.debug("search URL: %s", response.url)
 
         if not response.content:
             raise self.SearchError(query)
-        result = self.SearchResult(response.json())
-        if self.cache is not None:
-            self.cache[key] = result
-        return result
+        return self.SearchResult(response.json())
 
+    @cachedmethod
     def getitem(self, path):
-        if self.cache and path in self.cache:
-            return self.cache[path]
         url = '%s/%s' % (self.metadata_url, path)
         response = self.session.get(url)
-        logger.debug("metadata URL: %s", response.url)
-
         data = response.json()
-        # FIXME: cache errors?
+
         if not data or 'error' in data:
-            return None
+            return None  # FIXME: cache errors?
         # only subitems produce { "result": ... }
         if 'result' in data:
-            data = data['result']
-        if self.cache is not None:
-            self.cache[path] = data
-        return data
+            return data['result']
+        else:
+            return data
 
     def geturl(self, identifier, filename):
         return '%s/%s/%s' % (self.download_url, identifier, filename)
@@ -82,18 +94,22 @@ if __name__ == '__main__':
     import json
     import sys
 
+    logging.basicConfig()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('path', metavar='PATH', nargs='?')
     parser.add_argument('-b', '--base-url', default='http://archive.org')
     parser.add_argument('-f', '--fields', nargs='+')
-    parser.add_argument('-s', '--sort', nargs='+')
-    parser.add_argument('-r', '--rows', type=int)
-    parser.add_argument('-o', '--start', type=int)
     parser.add_argument('-q', '--query')
+    parser.add_argument('-r', '--rows', type=int)
+    parser.add_argument('-s', '--sort', nargs='+')
+    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument('--start', type=int)
     args = parser.parse_args()
 
-    logging.basicConfig()
-    logger.setLevel(logging.DEBUG)
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+
     client = InternetArchiveClient(args.base_url)
     if args.path:
         result = client.getitem(args.path)

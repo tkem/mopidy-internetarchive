@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 URI_SCHEMA = 'internetarchive'
 
-SEARCH_FIELDS = ['identifier', 'title', 'creator', 'date', 'publicdate']
+BROWSE_FIELDS = ('identifier', 'title', 'mediatype'),
+SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date', 'publicdate')
 
 
 def _filter_by_name(files, name):
@@ -44,10 +45,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         uri='internetarchive:',
         name='Internet Archive')
 
-    def __init__(self, backend, config):
+    def __init__(self, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
-        self.config = config
-        self.formats = [fmt.lower() for fmt in config['formats']]
+        self.formats = [fmt.lower() for fmt in self.getconfig('formats')]
 
     def browse(self, uri):
         logger.debug("internetarchive browse: %s", uri)
@@ -60,17 +60,18 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if uri == self.root_directory.uri:
             result = self.backend.client.search(
                 'mediatype:collection AND collection:etree',
-                fields=['identifier', 'title', 'mediatype'],
-                sort=['downloads desc'],
-                rows=self.config['browse_limit'])
+                fields=BROWSE_FIELDS,
+                sort=self.getconfig('sort_order'),
+                rows=self.getconfig('browse_limit'))
             return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
 
         item = self.backend.client.getitem(uriparts.path)
         if item['metadata']['mediatype'] == 'collection':
             result = self.backend.client.search(
                 'mediatype:etree AND collection:%s' % uriparts.path,
-                fields=['identifier', 'title', 'mediatype'],
-                rows=self.config['browse_limit'])
+                fields=BROWSE_FIELDS,
+                sort=self.getconfig('sort_order'),
+                rows=self.getconfig('browse_limit'))
             return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
         elif item['metadata']['mediatype'] == 'etree':
             files = _filter_by_format(item['files'], self.formats)
@@ -102,11 +103,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         result = self.backend.client.search(
             self._query_to_string(query),
             fields=SEARCH_FIELDS,
-            rows=self.config['search_limit'])
+            rows=self.getconfig('search_limit'))
         albums = [metadata_to_album(doc) for doc in result.docs]
         return SearchResult(
             uri=uricompose(URI_SCHEMA, query=result.query),
             albums=albums)
+
+    def getconfig(self, name):
+        return self.backend.config[name]
 
     def _query_to_string(self, query):
         terms = []
@@ -122,11 +126,11 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 terms.append('date:' + value[0])
             # TODO: other fields as filter
         terms.append('collection:(' +
-                     ' OR '.join(self.config['collections']) + ')')
+                     ' OR '.join(self.getconfig('collections')) + ')')
         terms.append('mediatype:(' +
-                     ' OR '.join(self.config['mediatypes']) + ')')
+                     ' OR '.join(self.getconfig('mediatypes')) + ')')
         terms.append('format:(' +
-                     ' OR '.join(self.config['formats']) + ')')
+                     ' OR '.join(self.getconfig('formats')) + ')')
         return ' '.join(terms)
 
     def _query_value_to_string(self, value):

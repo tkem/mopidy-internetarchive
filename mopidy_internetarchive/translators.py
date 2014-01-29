@@ -49,8 +49,7 @@ def file_to_ref(item, f):
 def metadata_to_ref(metadata, type=None):
     id = metadata['identifier']
     uri = uricompose(URI_SCHEME, path=id)
-    name = metadata.get('title', id)
-    name = id  # FIXME: check for title w/spaces or slashes
+    name = metadata.get('title', id)  # FIXME: check for title w/slashes
     if type is not None:
         return Ref(uri=uri, name=name, type=type)
     elif metadata['mediatype'] == 'audio':
