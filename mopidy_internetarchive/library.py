@@ -13,7 +13,7 @@ from .uritools import uricompose, urisplit
 
 logger = logging.getLogger(__name__)
 
-URI_SCHEMA = 'internetarchive'
+URI_SCHEME = 'internetarchive'
 
 BROWSE_FIELDS = ('identifier', 'title', 'mediatype'),
 SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date', 'publicdate')
@@ -42,7 +42,7 @@ def _filter_by_format(files, formats):
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     root_directory = Ref.directory(
-        uri='internetarchive:',
+        uri=URI_SCHEME + ':/',
         name='Internet Archive')
 
     def __init__(self, backend):
@@ -55,20 +55,24 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if not uri:
             return [self.root_directory]
 
-        uriparts = urisplit(uri)
-
         if uri == self.root_directory.uri:
             result = self.backend.client.search(
-                'mediatype:collection AND collection:etree',
+                query='mediatype:collection AND collection:(' +
+                    ' OR '.join(self.getconfig('collections')) +
+                    ')',
                 fields=BROWSE_FIELDS,
                 sort=self.getconfig('sort_order'),
                 rows=self.getconfig('browse_limit'))
             return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
 
+        uriparts = urisplit(uri)
         item = self.backend.client.getitem(uriparts.path)
+
         if item['metadata']['mediatype'] == 'collection':
             result = self.backend.client.search(
-                'mediatype:etree AND collection:%s' % uriparts.path,
+                query='collection:' + uriparts.path + ' AND mediatype:(' +
+                    ' OR '.join(self.getconfig('mediatypes')) +
+                    ')',
                 fields=BROWSE_FIELDS,
                 sort=self.getconfig('sort_order'),
                 rows=self.getconfig('browse_limit'))
@@ -106,7 +110,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             rows=self.getconfig('search_limit'))
         albums = [metadata_to_album(doc) for doc in result.docs]
         return SearchResult(
-            uri=uricompose(URI_SCHEMA, query=result.query),
+            uri=uricompose(URI_SCHEME, query=result.query),
             albums=albums)
 
     def getconfig(self, name):
