@@ -57,9 +57,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
         if uri == self.root_directory.uri:
             result = self.backend.client.search(
-                query='mediatype:collection AND collection:(' +
-                    ' OR '.join(self.getconfig('collections')) +
-                    ')',
+                query='mediatype:collection' +
+                ' AND collection:(' + ' OR '.join(self.getconfig('collections')) + ')',
                 fields=BROWSE_FIELDS,
                 sort=self.getconfig('sort_order'),
                 rows=self.getconfig('browse_limit'))
@@ -70,9 +69,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
         if item['metadata']['mediatype'] == 'collection':
             result = self.backend.client.search(
-                query='collection:' + uriparts.path + ' AND mediatype:(' +
-                    ' OR '.join(self.getconfig('mediatypes')) +
-                    ')',
+                query='collection:' + uriparts.path.strip('/') +
+                ' AND mediatype:(' + ' OR '.join(self.getconfig('mediatypes')) + ')' +
+                ' AND format:(' + ' OR '.join(self.getconfig('formats')) + ')',
                 fields=BROWSE_FIELDS,
                 sort=self.getconfig('sort_order'),
                 rows=self.getconfig('browse_limit'))

@@ -53,7 +53,7 @@ class InternetArchiveClient(object):
 
     @cachedmethod
     def getitem(self, path):
-        url = '%s/%s' % (self.metadata_url, path)
+        url = '%s/%s' % (self.metadata_url, path.strip('/'))
         response = self.session.get(url)
         data = response.json()
 
@@ -66,7 +66,7 @@ class InternetArchiveClient(object):
             return data
 
     def geturl(self, identifier, filename):
-        return '%s/%s/%s' % (self.download_url, identifier, filename)
+        return '%s/%s/%s' % (self.download_url, identifier.strip('/'), filename)
 
     class SearchResult(object):
 
