@@ -28,25 +28,53 @@ Or install Debian/Ubuntu packages for `Mopidy-InternetArchive releases
 Configuration
 =============
 
-Configuration items are very much subject to change at this point, so
-be warned before trying any of these::
+Configuration items are still subject to change at this point, so be
+warned before trying any of these::
 
-    [internetarchive]
+  [internetarchive]
+  enabled = true
 
-    # archive.org base URL; change to https if you like
-    base_url = http://archive.org
+  # archive.org base URL
+  base_url = http://archive.org
 
-    # limit search to specific collections, e.g. etree
-    collection =
+  # collections for searching/browsing
+  collections =
+    audio
+    audio_bookspoetry
+    audio_foreign
+    audio_music
+    audio_news
+    audio_podcast
+    audio_religion
+    audio_tech
+    etree
+    netlabels
+    opensource_audio
+    radioprograms
 
-    # limit search to specific mediatypes, e.g. etree
-    mediatype = audio, etree
+  # media types for searching/browsing
+  mediatypes = audio, etree
 
-    # streaming formats in order of preference
-    format = VBR MP3, MP3, Ogg Vorbis, Flac
+  # streaming formats in order of preference
+  formats = VBR MP3, MP3
 
-    # limit number of search results if set
-    limit =
+  # query sort order: <fieldname> (asc|desc), ...
+  sort_order = downloads desc
+
+  # top-level name for browsing
+  browse_label = Internet Archive
+
+  # maximum number of browse results
+  browse_limit = 1000
+
+  # maximum number of search results
+  search_limit = 100
+
+  # number of items and query results to cache
+  cache_size = 128
+
+  # cache time-to-live in seconds
+  cache_ttl = 86400
 
 
 Project resources
@@ -60,7 +88,16 @@ Project resources
 Changelog
 =========
 
+v0.2.0 (2014-01-31)
+-------------------
+
+- Add library browsing support.
+
+- Cache search results and metadata.
+
+- Properly quote/encode query terms.
+
 v0.1.0 (2014-01-24)
-----------------------------------------
+-------------------
 
 - Initial release.
