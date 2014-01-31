@@ -66,7 +66,9 @@ class InternetArchiveClient(object):
             return data
 
     def geturl(self, identifier, filename):
-        return '%s/%s/%s' % (self.download_url, identifier.strip('/'), filename)
+        return '%s/%s/%s' % (
+            self.download_url, identifier.strip('/'), filename
+        )
 
     class SearchResult(object):
 
@@ -81,6 +83,14 @@ class InternetArchiveClient(object):
 
         def __iter__(self):
             return iter(self.docs)
+
+        def __repr__(self):
+            fields = []
+            for (key, value) in sorted(self.__dict__.items()):
+            #    if isinstance(value, (frozenset, tuple)):
+            #        value = list(value)
+                fields.append('%s=%s' % (key, repr(value)))
+            return '%s(%s)' % (self.__class__.__name__, ', '.join(fields))
 
     class SearchError(Exception):
 
@@ -107,13 +117,14 @@ if __name__ == '__main__':
     parser.add_argument('--start', type=int)
     args = parser.parse_args()
 
+    client = InternetArchiveClient(args.base_url)
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-
-    client = InternetArchiveClient(args.base_url)
     if args.path:
         result = client.getitem(args.path)
     else:
-        result = client.search(args.query, args.fields, args.sort, args.rows, args.start)
+        result = client.search(
+            args.query, args.fields, args.sort, args.rows, args.start
+        )
     json.dump(result, sys.stdout, default=vars, indent=2)
     sys.stdout.write('\n')

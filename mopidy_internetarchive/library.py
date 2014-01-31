@@ -62,7 +62,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         }, Ref.DIRECTORY)
 
     def browse(self, uri):
-        logger.debug("internetarchive browse: %r", uri)
+        logger.debug("internetarchive browse: %s", uri)
 
         if not uri:
             return [self.root_directory]
@@ -79,7 +79,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return []
 
     def lookup(self, uri):
-        logger.debug("internetarchive lookup: %r", uri)
+        logger.debug("internetarchive lookup: %s", uri)
 
         try:
             uriparts = urisplit(uri)
@@ -88,9 +88,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 files = _byname(item['files'], uriparts.fragment)
             else:
                 files = _byformat(item['files'], self.getconfig('formats'))
+            logger.debug("internetarchive files: %r", files)
             return item_to_tracks(item, files)
         except Exception as error:
-            logger.error('Failed to lookup %s: %s', uri, error)
+            logger.error('internetarchive lookup %s: %s', uri, error)
             return []
 
     def search(self, query=None, uris=None):
@@ -118,6 +119,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             fields=self.SEARCH_FIELDS,
             sort=self.getconfig('sort_order'),
             rows=self.getconfig('search_limit'))
+        logger.debug("internetarchive search result: %r", result)
         return SearchResult(
             uri=uricompose(self.backend.URI_SCHEME, query=result.query),
             albums=[doc_to_album(doc) for doc in result.docs])
@@ -133,6 +135,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             fields=self.BROWSE_FIELDS,
             sort=self.getconfig('sort_order'),
             rows=self.getconfig('browse_limit'))
+        logger.debug("internetarchive search result: %r", result)
         return [doc_to_ref(doc, Ref.DIRECTORY) for doc in result.docs]
 
     def _browse_collection(self, identifier):
@@ -144,9 +147,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             fields=self.BROWSE_FIELDS,
             sort=self.getconfig('sort_order'),
             rows=self.getconfig('browse_limit'))
+        logger.debug("internetarchive search result: %r", result)
         return [doc_to_ref(doc, Ref.DIRECTORY) for doc in result.docs]
 
     def _browse_audio(self, item):
         files = _byformat(item['files'], self.getconfig('formats'))
-        logger.debug("got files: %s", repr(files))
+        logger.debug("internetarchive files: %r", files)
         return [file_to_ref(item, f) for f in files]
