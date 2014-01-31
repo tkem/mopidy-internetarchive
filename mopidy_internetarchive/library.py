@@ -13,10 +13,15 @@ from .uritools import uricompose, urisplit
 
 logger = logging.getLogger(__name__)
 
-URI_SCHEME = 'internetarchive'
 
-BROWSE_FIELDS = ('identifier', 'title', 'mediatype'),
-SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date', 'publicdate')
+def _query_term(field, values):
+    if not hasattr(values, '__iter__'):
+        values = [values]
+    value = '(%s)' % ' OR '.join(values) if len(values) > 1 else values[0]
+    if field:
+        return '%s:%s' % (field, value)
+    else:
+        return value
 
 
 def _filter_by_name(files, name):
@@ -41,12 +46,15 @@ def _filter_by_format(files, formats):
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
-    root_directory = Ref.directory(
-        uri=URI_SCHEME + ':/',
-        name='Internet Archive')
+    BROWSE_FIELDS = ('identifier', 'title', 'mediatype'),
+
+    SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date', 'publicdate')
 
     def __init__(self, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
+        self.root_directory = Ref.directory(
+            uri='%s:/' % backend.URI_SCHEME,
+            name=self.getconfig('browse_label'))
         self.formats = [fmt.lower() for fmt in self.getconfig('formats')]
 
     def browse(self, uri):
@@ -59,7 +67,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             result = self.backend.client.search(
                 query='mediatype:collection' +
                 ' AND collection:(' + ' OR '.join(self.getconfig('collections')) + ')',
-                fields=BROWSE_FIELDS,
+                fields=self.BROWSE_FIELDS,
                 sort=self.getconfig('sort_order'),
                 rows=self.getconfig('browse_limit'))
             return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
@@ -72,7 +80,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 query='collection:' + uriparts.path.strip('/') +
                 ' AND mediatype:(' + ' OR '.join(self.getconfig('mediatypes')) + ')' +
                 ' AND format:(' + ' OR '.join(self.getconfig('formats')) + ')',
-                fields=BROWSE_FIELDS,
+                fields=self.BROWSE_FIELDS,
                 sort=self.getconfig('sort_order'),
                 rows=self.getconfig('browse_limit'))
             return [metadata_to_ref(d, Ref.DIRECTORY) for d in result.docs]
@@ -105,39 +113,31 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return
         result = self.backend.client.search(
             self._query_to_string(query),
-            fields=SEARCH_FIELDS,
+            fields=self.SEARCH_FIELDS,
             rows=self.getconfig('search_limit'))
         albums = [metadata_to_album(doc) for doc in result.docs]
         return SearchResult(
-            uri=uricompose(URI_SCHEME, query=result.query),
+            uri=uricompose(self.backend.URI_SCHEME, query=result.query),
             albums=albums)
 
     def getconfig(self, name):
-        return self.backend.config[name]
+        return self.backend.getconfig(name)
 
     def _query_to_string(self, query):
-        terms = []
+        terms = [
+            _query_term('collection', self.getconfig('collections')),
+            _query_term('mediatype', self.getconfig('mediatypes')),
+            _query_term('format', self.getconfig('formats'))
+        ]
         for (field, value) in query.iteritems():
             # TODO: better quote/range handling
             if field == "any":
-                terms.append(self._query_value_to_string(value))
+                terms.append(_query_term(None, value))
             elif field == "album":
-                terms.append('title:' + self._query_value_to_string(value))
+                terms.append(_query_term('title', value))
             elif field == "artist":
-                terms.append('creator:' + self._query_value_to_string(value))
+                terms.append(_query_term('creator', value))
             elif field == 'date':
-                terms.append('date:' + value[0])
-            # TODO: other fields as filter
-        terms.append('collection:(' +
-                     ' OR '.join(self.getconfig('collections')) + ')')
-        terms.append('mediatype:(' +
-                     ' OR '.join(self.getconfig('mediatypes')) + ')')
-        terms.append('format:(' +
-                     ' OR '.join(self.getconfig('formats')) + ')')
+                terms.append(_query_term('date', value))
+        # TODO: other fields as filter
         return ' '.join(terms)
-
-    def _query_value_to_string(self, value):
-        if hasattr(value, '__iter__'):
-            return '(' + ' OR '.join(value) + ')'
-        else:
-            return value

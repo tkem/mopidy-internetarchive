@@ -1,11 +1,8 @@
 from __future__ import unicode_literals
 
-import os
-
 from mopidy import config, ext
 
-
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
 class Extension(ext.Extension):
@@ -15,6 +12,7 @@ class Extension(ext.Extension):
     version = __version__
 
     def get_default_config(self):
+        import os
         conf_file = os.path.join(os.path.dirname(__file__), 'ext.conf')
         return config.read(conf_file)
 
@@ -25,9 +23,9 @@ class Extension(ext.Extension):
         schema['mediatypes'] = config.List()
         schema['formats'] = config.List()
         schema['sort_order'] = config.List()
-        schema['search_limit'] = config.Integer(minimum=1, optional=True)
+        schema['browse_label'] = config.String()
         schema['browse_limit'] = config.Integer(minimum=1, optional=True)
-        schema['preload'] = config.Boolean()
+        schema['search_limit'] = config.Integer(minimum=1, optional=True)
         schema['cache_size'] = config.Integer(minimum=1)
         schema['cache_ttl'] = config.Integer(minimum=1)
         return schema
