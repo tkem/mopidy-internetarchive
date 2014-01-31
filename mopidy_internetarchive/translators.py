@@ -12,61 +12,60 @@ URI_SCHEME = 'internetarchive'
 
 def item_to_tracks(item, files):
     metadata = item['metadata']
-    id = metadata['identifier']
-    album = metadata_to_album(metadata)
+    identifier = metadata['identifier']
+    album = doc_to_album(metadata)
     byname = {f['name']: f for f in item['files']}
 
     tracks = []
-    for file in files:
-        if 'original' in file and file['original'] in byname:
-            orig = byname[file['original']]
+    for f in files:
+        if 'original' in f and f['original'] in byname:
+            orig = byname[f['original']]
             for key in orig:
-                if not key in file or file[key] in ('', 'tmp'):
-                    file[key] = orig[key]
+                if not key in f or f[key] in ('', 'tmp'):
+                    f[key] = orig[key]
 
-        track = Track(
-            uri=uricompose(URI_SCHEME, path=id, fragment=file['name']),
-            name=file.get('title', file['name']),
-            artists=parse_creator(file.get('creator'), album.artists),
+        tracks.append(Track(
+            uri=uricompose(URI_SCHEME, path=identifier, fragment=f['name']),
+            name=f.get('title', f['name']),
+            artists=parse_creator(f.get('creator'), album.artists),
             album=album,
-            track_no=parse_track(file.get('track')),
-            date=parse_date(file.get('date'), album.date),
-            length=parse_length(file.get('length')),
-            bitrate=parse_bitrate(file.get('bitrate')),
-            last_modified=parse_mtime(file.get('mtime'))
-        )
-        tracks.append(track)
+            track_no=parse_track(f.get('track')),
+            date=parse_date(f.get('date'), album.date),
+            length=parse_length(f.get('length')),
+            bitrate=parse_bitrate(f.get('bitrate')),
+            last_modified=parse_mtime(f.get('mtime'))
+        ))
     return tracks
 
 
-def file_to_ref(item, f):
-    id = item['metadata']['identifier']
-    uri = uricompose(URI_SCHEME, path=id, fragment=f['name'])
-    name = f.get('title', f['name'])  # TODO: orig title?
+def file_to_ref(item, file):
+    identifier = item['metadata']['identifier']
+    name = file.get('title', file['name'])  # FIXME: orig title?
+    uri = uricompose(URI_SCHEME, path=identifier, fragment=file['name'])
     return Ref.track(uri=uri, name=name)
 
 
-def metadata_to_ref(metadata, type=None):
-    id = metadata['identifier']
-    uri = uricompose(URI_SCHEME, path=id)
-    name = metadata.get('title', id)  # FIXME: check for title w/slashes
+def doc_to_ref(doc, type=None):
+    identifier = doc['identifier']
+    name = doc.get('title', identifier)  # FIXME: title w/slashes?
+    uri = uricompose(URI_SCHEME, path=identifier)
     if type is not None:
         return Ref(uri=uri, name=name, type=type)
-    elif metadata['mediatype'] == 'audio':
+    elif doc['mediatype'] == 'audio':
         return Ref.album(uri=uri, name=name)
-    elif metadata['mediatype'] == 'collection':
+    elif doc['mediatype'] == 'collection':
         return Ref.directory(uri=uri, name=name)
     else:
         return None
 
 
-def metadata_to_album(metadata):
-    id = metadata['identifier']
+def doc_to_album(doc):
+    identifier = doc['identifier']
     return Album(
-        uri=uricompose(URI_SCHEME, path=id),
-        name=metadata.get('title', id),
-        artists=parse_creator(metadata.get('creator')),
-        date=parse_date(metadata.get('date'))
+        uri=uricompose(URI_SCHEME, path=identifier),
+        name=doc.get('title', identifier),
+        artists=parse_creator(doc.get('creator')),
+        date=parse_date(doc.get('date'))
     )
 
 

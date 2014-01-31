@@ -18,6 +18,7 @@ class LibraryTest(unittest.TestCase):
             'collections': ['etree', 'audio'],
             'mediatypes': ['etree', 'audio'],
             'formats': ['MP3'],
+            'sort_order': ['downloads desc'],
             'browse_label': 'ia',
             'browse_limit': None,
             'search_limit': None,
