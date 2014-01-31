@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+import re
 
 from collections import defaultdict
 
@@ -12,19 +13,31 @@ from .uritools import uricompose, urisplit
 
 logger = logging.getLogger(__name__)
 
+SPECIAL_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
-def _query_string(*terms):
+
+def _build_query(*terms):
     return ' AND '.join(terms)
 
 
-def _query_term(field, values):
+def _quote_term(term):
+    term = SPECIAL_CHAR_RE.sub(r'\\\1', term)
+    # only quote if term contains whitespace, since something like
+    # date:"2014-01-01" will give an error
+    if any(c.isspace() for c in term):
+        term = '"' + term + '"'
+    return term
+
+
+def _build_term(field, values):
     if not hasattr(values, '__iter__'):
         values = [values]
-    value = '(%s)' % ' OR '.join(values) if len(values) > 1 else values[0]
-    if field:
-        return '%s:%s' % (field, value)
+    values = [_quote_term(value) for value in values]
+    if len(values) > 1:
+        term = '(%s)' % ' OR '.join(values)
     else:
-        return value
+        term = values[0]
+    return '%s:%s' % (field, term) if field else term
 
 
 def _byname(files, name):
@@ -100,22 +113,22 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if not query:
             return
         terms = [
-            _query_term('collection', self.getconfig('collections')),
-            _query_term('mediatype', self.getconfig('mediatypes')),
-            _query_term('format', self.getconfig('formats'))
+            _build_term('collection', self.getconfig('collections')),
+            _build_term('mediatype', self.getconfig('mediatypes')),
+            _build_term('format', self.getconfig('formats'))
         ]
         for (field, value) in query.iteritems():
             if field == "any":
-                terms.append(_query_term(None, value))
+                terms.append(_build_term(None, value))
             elif field == "album":
-                terms.append(_query_term('title', value))
+                terms.append(_build_term('title', value))
             elif field == "artist":
-                terms.append(_query_term('creator', value))
+                terms.append(_build_term('creator', value))
             elif field == 'date':
-                terms.append(_query_term('date', value))
+                terms.append(_build_term('date', value))
             # TODO: other fields as filter
         result = self.backend.client.search(
-            query=_query_string(*terms),
+            query=_build_query(*terms),
             fields=self.SEARCH_FIELDS,
             sort=self.getconfig('sort_order'),
             rows=self.getconfig('search_limit'))
@@ -129,9 +142,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def _browse_root(self):
         result = self.backend.client.search(
-            query=_query_string(
+            query=_build_query(
                 'mediatype:collection',
-                _query_term('identifier', self.getconfig('collections'))),
+                _build_term('identifier', self.getconfig('collections'))),
             fields=self.BROWSE_FIELDS,
             sort=self.getconfig('sort_order'),
             rows=self.getconfig('browse_limit'))
@@ -140,10 +153,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def _browse_collection(self, identifier):
         result = self.backend.client.search(
-            query=_query_string(
-                _query_term('collection', identifier),
-                _query_term('mediatype', self.getconfig('mediatypes')),
-                _query_term('format', self.getconfig('formats'))),
+            query=_build_query(
+                _build_term('collection', identifier),
+                _build_term('mediatype', self.getconfig('mediatypes')),
+                _build_term('format', self.getconfig('formats'))),
             fields=self.BROWSE_FIELDS,
             sort=self.getconfig('sort_order'),
             rows=self.getconfig('browse_limit'))
