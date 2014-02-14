@@ -26,6 +26,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             uri=uricompose(backend.URI_SCHEME, path='/'),
             name=self.getconfig('browse_label')
         )
+        # fetch/cache top-level browse collections
+        refs = self.browse(self.root_directory.uri)
+        logger.info("Loaded %d Internet Archive collections", len(refs))
 
     def browse(self, uri):
         logger.debug("internetarchive browse: %s", uri)
