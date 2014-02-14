@@ -58,7 +58,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             if filename:
                 files = [f for f in item['files'] if f['name'] == filename]
             else:
-                files = self._byformat(item['files'])
+                files = self._files_by_format(item['files'])
             logger.debug("internetarchive files: %r", files)
             return item_to_tracks(item, files)
         except Exception as error:
@@ -78,14 +78,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def getstream(self, uri):
         _, _, identifier, _, filename = urisplit(uri)
-        return self.backend.client.geturl(identifier, filename)
+        return self.backend.client.geturl(identifier.lstrip('/'), filename)
 
     def _find(self, query):
-        terms = {
-            'collection': self.getconfig('collections'),
-            'mediatype':  self.getconfig('mediatypes'),
-            'format': self.getconfig('formats')
-        }
+        terms = {}
         for (field, values) in query.iteritems():
             if field == "any":
                 terms[None] = values
@@ -95,13 +91,20 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 terms['creator'] = values
             elif field == 'date':
                 terms['date'] = values
+        qs = self.backend.client.query_string(terms)
+
         result = self.backend.client.search(
-            query=self.backend.client.query_string(terms),
+            qs + ' AND ' + self.backend.client.query_string({
+                'collection': self.getconfig('collections'),
+                'mediatype':  self.getconfig('mediatypes'),
+                'format': self.getconfig('formats')
+            }, group_op='OR'),
             fields=self.SEARCH_FIELDS,
             sort=self.getconfig('sort_order'),
-            rows=self.getconfig('search_limit'))
-        albums = [doc_to_album(doc) for doc in result.docs]
-        logger.debug("internetarchive albums: %r", albums)
+            rows=self.getconfig('search_limit')
+        )
+        albums = [doc_to_album(doc) for doc in result]
+        logger.debug("internetarchive found albums: %r", albums)
 
         return SearchResult(
             uri=uricompose(self.backend.URI_SCHEME, query=result.query),
@@ -110,49 +113,48 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def _browse_root(self):
         result = self.backend.client.search(
-            query=self.backend.client.query_string({
+            self.backend.client.query_string({
                 'mediatype': 'collection',
                 'identifier': self.getconfig('collections')
-            }),
+            }, group_op='OR'),
             fields=self.BROWSE_FIELDS,
             sort=self.getconfig('sort_order'),
-            rows=self.getconfig('browse_limit'))
-        return [self._doc_ref(doc) for doc in result.docs]
+            rows=self.getconfig('browse_limit')
+        )
+        return [self._docref(doc) for doc in result]
 
     def _browse_collection(self, identifier):
         result = self.backend.client.search(
-            query=self.backend.client.query_string({
+            self.backend.client.query_string({
                 'collection': identifier,
                 'mediatype': self.getconfig('mediatypes'),
                 'format': self.getconfig('formats')
-            }),
+            }, group_op='OR'),
             fields=self.BROWSE_FIELDS,
             sort=self.getconfig('sort_order'),
-            rows=self.getconfig('browse_limit'))
-        return [self._doc_ref(doc) for doc in result.docs]
+            rows=self.getconfig('browse_limit')
+        )
+        return [self._docref(doc) for doc in result]
 
     def _browse_item(self, item):
-        files = self._byformat(item['files'])
-        return [self._file_ref(item, f) for f in files]
+        refs = []
+        scheme = self.backend.URI_SCHEME
+        identifier = item['metadata']['identifier']
+        for f in self._files_by_format(item['files']):
+            uri = uricompose(scheme, path=identifier, fragment=f['name'])
+            # TODO: title w/slash or 'tmp'
+            name = f.get('title', f['name'])
+            refs.append(Ref.track(uri=uri, name=name))
+        return refs
 
-    def _doc_ref(self, doc):
+    def _docref(self, doc):
         identifier = doc['identifier']
         uri = uricompose(self.backend.URI_SCHEME, path=identifier)
         # TODO: title w/slash
         name = doc.get('title', identifier)
         return Ref.directory(uri=uri, name=name)
 
-    def _file_ref(self, item, file):
-        uri = uricompose(
-            self.backend.URI_SCHEME,
-            path=item['metadata']['identifier'],
-            fragment=file['name']
-        )
-        # TODO: title w/slash or 'tmp'
-        name = file.get('title', file['name'])
-        return Ref.track(uri=uri, name=name)
-
-    def _byformat(self, files):
+    def _files_by_format(self, files):
         byformat = defaultdict(list)
         for f in files:
             byformat[f['format'].lower()].append(f)
