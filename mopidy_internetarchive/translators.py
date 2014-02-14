@@ -57,7 +57,7 @@ def parse_creator(values, default=[]):
 
 
 def parse_track(s, default=None):
-    return int(s) if s else default
+    return int(s) if s and s.isdigit() else default
 
 
 def parse_length(s, default=None):
