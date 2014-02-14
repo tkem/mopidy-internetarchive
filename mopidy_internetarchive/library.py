@@ -140,6 +140,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def getconfig(self, name):
         return self.backend.getconfig(name)
 
+    def getstream(self, uri):
+        _, _, identifier, _, filename = urisplit(uri)
+        return self.backend.client.geturl(identifier, filename)
+
     def _browse_root(self):
         result = self.backend.client.search(
             query=_build_query(
