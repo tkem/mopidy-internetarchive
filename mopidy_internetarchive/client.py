@@ -5,18 +5,9 @@ import logging
 import re
 import requests
 
-SPECIAL_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
+from urlparse import urljoin
 
 logger = logging.getLogger(__name__)
-
-
-def _quote_term(term):
-    term = SPECIAL_CHAR_RE.sub(r'\\\1', term)
-    # only quote if term contains whitespace, since something like
-    # date:"2014-01-01" will give an error
-    if any(c.isspace() for c in term):
-        term = '"' + term + '"'
-    return term
 
 
 def cachedmethod(method):
@@ -43,11 +34,12 @@ def cachedmethod(method):
 
 class InternetArchiveClient(object):
 
+    SPECIAL_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
+
     def __init__(self, base_url='http://archive.org/', cache=None):
-        from urlparse import urljoin
         self.search_url = urljoin(base_url, '/advancedsearch.php')
-        self.metadata_url = urljoin(base_url, '/metadata')
-        self.download_url = urljoin(base_url, '/download')
+        self.metadata_url = urljoin(base_url, '/metadata/')
+        self.download_url = urljoin(base_url, '/download/')
         self.session = requests.Session()  # TODO: timeout, etc.
         self.cache = cache
 
@@ -68,29 +60,28 @@ class InternetArchiveClient(object):
 
     @cachedmethod
     def getitem(self, path):
-        url = '%s/%s' % (self.metadata_url, path.strip('/'))
+        url = urljoin(self.metadata_url, path.lstrip('/'))
         response = self.session.get(url)
         data = response.json()
 
         if not data or 'error' in data:
-            return None  # FIXME: cache errors?
-        # only subitems produce { "result": ... }
-        if 'result' in data:
+            return None
+        elif 'result' in data:
+            # only subitems produce { "result": ... }
             return data['result']
         else:
             return data
 
     def geturl(self, identifier, filename):
-        return '%s/%s/%s' % (
-            self.download_url, identifier.strip('/'), filename
-        )
+        return urljoin(self.download_url, identifier + '/' + filename)
 
-    def query_string(self, query):
+    @classmethod
+    def query_string(cls, query):
         terms = []
         for (field, values) in query.iteritems():
             if not hasattr(values, '__iter__'):
                 values = [values]
-            values = [_quote_term(value) for value in values]
+            values = [cls.quote_term(value) for value in values]
             if len(values) > 1:
                 term = '(%s)' % ' OR '.join(values)
             else:
@@ -98,12 +89,20 @@ class InternetArchiveClient(object):
             terms.append(field + ':' + term if field else term)
         return ' '.join(terms)
 
+    @classmethod
+    def quote_term(cls, term):
+        term = cls.SPECIAL_CHAR_RE.sub(r'\\\1', term)
+        # only quote if term contains whitespace, otherwise something
+        # like date:"2014-01-01" will raise an error
+        if any(c.isspace() for c in term):
+            term = '"' + term + '"'
+        return term
+
     class SearchResult(collections.Sequence):
 
         def __init__(self, result):
             self.query = result['responseHeader']['params']['q']
-            self.num_found = result['response']['numFound']
-            self.start = result['response']['start']
+            self.rowcount = result['response']['numFound']
             self.docs = result['response']['docs']
 
         def __getitem__(self, key):
@@ -118,7 +117,7 @@ class InternetArchiveClient(object):
     class SearchError(Exception):
 
         def __init__(self, query):
-            msg = 'Invalid query: ' + query
+            msg = 'Invalid query %r' % query
             super(InternetArchiveClient.SearchError, self).__init__(msg)
 
 
