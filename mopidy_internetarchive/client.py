@@ -5,8 +5,6 @@ import logging
 import re
 import requests
 
-from uritools import urijoin
-
 SPECIAL_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
 logger = logging.getLogger(__name__)
@@ -46,9 +44,10 @@ def cachedmethod(method):
 class InternetArchiveClient(object):
 
     def __init__(self, base_url='http://archive.org/', cache=None):
-        self.search_url = urijoin(base_url, '/advancedsearch.php')
-        self.metadata_url = urijoin(base_url, '/metadata')
-        self.download_url = urijoin(base_url, '/download')
+        from urlparse import urljoin
+        self.search_url = urljoin(base_url, '/advancedsearch.php')
+        self.metadata_url = urljoin(base_url, '/metadata')
+        self.download_url = urljoin(base_url, '/download')
         self.session = requests.Session()  # TODO: timeout, etc.
         self.cache = cache
 
