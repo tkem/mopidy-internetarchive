@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import re
 
-from mopidy.models import Track, Album, Artist, Ref
+from mopidy.models import Track, Album, Artist
 from .uritools import uricompose
 
 ISODATE_RE = re.compile(r"(\d{4})-(\d{2})-(\d{2})")
@@ -36,27 +36,6 @@ def item_to_tracks(item, files):
             last_modified=parse_mtime(f.get('mtime'))
         ))
     return tracks
-
-
-def file_to_ref(item, file):
-    identifier = item['metadata']['identifier']
-    name = file.get('title', file['name'])  # FIXME: orig title?
-    uri = uricompose(URI_SCHEME, path=identifier, fragment=file['name'])
-    return Ref.track(uri=uri, name=name)
-
-
-def doc_to_ref(doc, type=None):
-    identifier = doc['identifier']
-    name = doc.get('title', identifier)  # FIXME: title w/slashes?
-    uri = uricompose(URI_SCHEME, path=identifier)
-    if type is not None:
-        return Ref(uri=uri, name=name, type=type)
-    elif doc['mediatype'] == 'audio':
-        return Ref.album(uri=uri, name=name)
-    elif doc['mediatype'] == 'collection':
-        return Ref.directory(uri=uri, name=name)
-    else:
-        return None
 
 
 def doc_to_album(doc):
