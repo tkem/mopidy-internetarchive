@@ -23,9 +23,11 @@ class Extension(ext.Extension):
         schema['mediatypes'] = config.List()
         schema['formats'] = config.List()
         schema['sort_order'] = config.List()
-        schema['browse_label'] = config.String()
-        schema['browse_limit'] = config.Integer(minimum=1, optional=True)
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
+        schema['browse_limit'] = config.Integer(minimum=1, optional=True)
+        schema['browse_label'] = config.String()
+        schema['bookmarks'] = config.List()
+        schema['bookmarks_label'] = config.String()
         schema['cache_size'] = config.Integer(minimum=1)
         schema['cache_ttl'] = config.Integer(minimum=1)
         return schema

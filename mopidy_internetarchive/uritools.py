@@ -2,26 +2,36 @@
 urlparse.
 
 This module defines RFC 3986 compliant replacements for the most
-commonly used functions of the Python Standard Library `urlparse`
+commonly used functions of the Python Standard Library :mod:`urlparse`
 module.
+
 """
 from collections import namedtuple
 import re
+import urllib
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
-# RFC 3986 2.2. Reserved Characters
+RE = re.compile(r"""
+(?:(?P<scheme>[^:/?#]+):)?      # scheme
+(?://(?P<authority>[^/?#]*))?   # authority
+(?P<path>[^?#]*)                # path
+(?:\?(?P<query>[^#]*))?         # query
+(?:\#(?P<fragment>.*))?         # fragment
+""", flags=(re.VERBOSE))
+"""Regular expression for splitting a well-formed URI into its
+components.
+
+"""
 
 GEN_DELIMS = ':/?#[]@'
-"""General delimiter characters"""
+"""General delimiting characters."""
 
 SUB_DELIMS = "!$&'()*+,;="
-"""Sub-component delimiter characters"""
+"""Subcomponent delimiting characters."""
 
 RESERVED = GEN_DELIMS + SUB_DELIMS
-"""Reserved characters"""
-
-# RFC 3986 2.3. Unreserved Characters
+"""Reserved characters."""
 
 UNRESERVED = (
     'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -29,85 +39,66 @@ UNRESERVED = (
     '0123456789'
     '_.-~'
 )
-"""Unreserved characters"""
+"""Unreserved characters."""
 
-# RFC 3986 Appendix B
+_URI_COMPONENTS = ('scheme', 'authority', 'path', 'query', 'fragment')
 
-RE = re.compile(r"""
-(?:([^:/?#]+):)?  # scheme
-(?://([^/?#]*))?  # authority
-([^?#]*)          # path
-(?:\?([^#]*))?    # query
-(?:\#(.*))?       # fragment
+_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9.+-]*$")
+
+_AUTHORITY_RE = re.compile(r"""
+\A
+(?:(.*)\@)?     # userinfo
+(.*?)           # host
+(?:\:(\d+))?    # port
+\Z
 """, flags=(re.VERBOSE))
-"""Regular expression to split URIs into components."""
 
 
 def urisplit(uri):
-    """Split a URI string into a tuple with five components, according
-    to a URI's general structure::
+    """Split a well-formed URI string into a tuple with five components
+    corresponding to a URI's general structure::
 
       <scheme>://<authority>/<path>?<query>#<fragment>
 
-    The return value is a named tuple with the following fields:
+    The return value is an instance of a subclass of :class:`tuple`
+    with the following additional read-only attributes:
 
-    +-------+-------------+-------------------------------------------------+
-    | Index | Attribute   | Value                                           |
-    +=======+=============+=================================================+
-    | 0     | `scheme`    | URI scheme or `None` if not present             |
-    +-------+-------------+-------------------------------------------------+
-    | 1     | `authority` | authority component or `None` if not present    |
-    +-------+-------------+-------------------------------------------------+
-    | 2     | `path`      | path component, always present but may be empty |
-    +-------+-------------+-------------------------------------------------+
-    | 3     | `query`     | query component or `None` if not present        |
-    +-------+-------------+-------------------------------------------------+
-    | 4     | `fragment`  | fragment component or `None` if not present     |
-    +-------+-------------+-------------------------------------------------+
+    +-------------------+-------+---------------------------------------------+
+    | Attribute         | Index | Value                                       |
+    +===================+=======+=============================================+
+    | :attr:`scheme`    | 0     | URI scheme, or :const:`None` if not present |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`authority` | 1     | Authority component,                        |
+    |                   |       | or :const:`None` if not present             |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`path`      | 2     | Path component, always present but may be   |
+    |                   |       | empty                                       |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`query`     | 3     | Query component,                            |
+    |                   |       | or :const:`None` if not present             |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`fragment`  | 4     | Fragment identifier,                        |
+    |                   |       | or :const:`None` if not present             |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`userinfo`  |       | Userinfo subcomponent of authority,         |
+    |                   |       | or :const:`None` if not present             |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`host`      |       | Host subcomponent of authority,             |
+    |                   |       | or :const:`None` if not present             |
+    +-------------------+-------+---------------------------------------------+
+    | :attr:`port`      |       | Port subcomponent of authority as integer,  |
+    |                   |       | or :const:`None` if not present             |
+    +-------------------+-------+---------------------------------------------+
 
     """
     return SplitResult(*RE.match(uri).groups())
 
 
 def uriunsplit(parts):
-    """Combine the elements of a five-item iterable as returned by
-    `urisplit()` into a URI string.
+    """Combine the elements of a five-item iterable into a URI string.
 
     """
-
     scheme, authority, path, query, fragment = parts
-
-    # RFC 3986 3.: The scheme and path components are required, though
-    # the path may be empty (no characters).
-    #
-    # We relax the requirement for presence of the scheme to allow for
-    # URI references, but do not allow empty schemes, since these are
-    # not recognized by the RE given in RFC 3986 Appendix B.
-    if scheme == '':
-        raise ValueError('URI scheme must not be empty')
-    if path is None:
-        raise ValueError('URI path must be present if empty')
-
-    # RFC 3986 3.3.: If a URI contains an authority component, then
-    # the path component must either be empty or begin with a slash
-    # ("/") character.  If a URI does not contain an authority
-    # component, then the path cannot begin with two slash characters
-    # ("//").  In addition, a URI reference may be a relative-path
-    # reference, in which case the first path segment cannot contain a
-    # colon (":") character.
-    if authority is not None and path and not path.startswith('/'):
-        raise ValueError('Cannot use path %r with authority' % path)
-    if authority is None and path.startswith('//'):
-        raise ValueError('Cannot use path %r without authority' % path)
-    if scheme is None and ':' in path.split('/', 1)[0]:
-        raise ValueError('Cannot use path %r without scheme' % path)
-
-    # Prevent some reserved characters within parts, so that for all
-    # parts, uri: urisplit(uriunsplit(parts)) == parts and
-    # uriunsplit(urisplit(uri)) == uri
-    for part in zip(parts, (':/?#', '/?#', '?#', '#', '')):
-        if part[0] and any(c in part[1] for c in part[0]):
-            raise ValueError('Reserved character in %r' % part[0])
 
     # RFC 3986 5.3. Component Recomposition
     result = ''
@@ -133,28 +124,30 @@ def uridefrag(uri):
     """Remove an existing fragment from a URI string.
 
     Return a tuple of the defragmented URI and the fragment.  If `uri`
-    contains no fragment, the second element is `None`.
+    contains no fragment, the second element is :const:`None`.
 
     """
-    scheme, authority, path, query, fragment = urisplit(uri)
-    return (uriunsplit((scheme, authority, path, query, None)), fragment)
+    if '#' in uri:
+        return DefragResult(*uri.split('#', 1))
+    else:
+        return DefragResult(uri, None)
 
 
 def uriencode(string, safe='', encoding='utf-8'):
     """Encode `string` using the codec registered for `encoding`,
-    replacing any unreserved characters not in `safe` with their
-    corresponding percent-encodings.
+    replacing any characters not in :const:`UNRESERVED` or `safe` with
+    their corresponding percent-encodings.
 
     """
-    from urllib import quote
-    return quote(string.encode(encoding), UNRESERVED + safe)
+    return urllib.quote(string.encode(encoding), UNRESERVED + safe)
 
 
 def uridecode(string, encoding='utf-8'):
-    """Replace percent-encodings in `string`, and decode the resulting
-    string using the codec registered for `encoding`."""
-    from urllib import unquote
-    return unquote(string).decode(encoding)
+    """Replace any percent-encodings in `string`, and decode the resulting
+    string using the codec registered for `encoding`.
+
+    """
+    return urllib.unquote(string).decode(encoding)
 
 
 def urinormpath(path):
@@ -169,7 +162,6 @@ def urinormpath(path):
             out.append(s)
         elif out:
             out.pop()
-
     # Fix leading/trailing slashes
     if path.startswith('/') and out[0] != '':
         out.insert(0, '')
@@ -182,29 +174,84 @@ def uricompose(scheme=None, authority=None, path='', query=None,
                fragment=None, encoding='utf-8'):
     """Compose a URI string from its components."""
 
+    # RFC 3986 3.1: Scheme names consist of a sequence of characters
+    # beginning with a letter and followed by any combination of
+    # letters, digits, plus ("+"), period ("."), or hyphen ("-").
+    # Although schemes are case-insensitive, the canonical form is
+    # lowercase and documents that specify schemes must do so with
+    # lowercase letters.  An implementation should accept uppercase
+    # letters as equivalent to lowercase in scheme names (e.g., allow
+    # "HTTP" as well as "http") for the sake of robustness but should
+    # only produce lowercase scheme names for consistency.
     if scheme is not None:
-        scheme = uriencode(scheme, encoding='ascii')
+        if not _SCHEME_RE.match(scheme):
+            raise ValueError('Invalid scheme %r' % scheme)
+        scheme = scheme.lower()
+
     if authority is not None:
+        # TODO: check authority is well-formed, allow '[]' for IPv6
         authority = uriencode(authority, SUB_DELIMS + ':@', encoding)
-    if path is not None:
-        path = uriencode(path, SUB_DELIMS + ':@/', encoding)
-    if query is not None:
+
+    # RFC 3986 3.3: If a URI contains an authority component, then the
+    # path component must either be empty or begin with a slash ("/")
+    # character.  If a URI does not contain an authority component,
+    # then the path cannot begin with two slash characters ("//").  In
+    # addition, a URI reference may be a relative-path reference, in
+    # which case the first path segment cannot contain a colon (":")
+    # character.
+    if path is None:
+        raise ValueError('URI path component must be present if empty')
+    if authority is not None and path and not path.startswith('/'):
+        raise ValueError('Invalid path %r with authority' % path)
+    if authority is None and path.startswith('//'):
+        raise ValueError('Invalid path %r without authority' % path)
+    if scheme is None and authority is None and ':' in path.split('/', 1)[0]:
+        raise ValueError('Invalid path %r without scheme' % path)
+    path = uriencode(path, SUB_DELIMS + ':@/', encoding)
+
+    # TODO querylist, querydict
+    if query:
         query = uriencode(query, SUB_DELIMS + ':@/?', encoding)
-    if fragment is not None:
+
+    if fragment:
         fragment = uriencode(fragment, SUB_DELIMS + ':@/?', encoding)
+
     return uriunsplit((scheme, authority, path, query, fragment))
 
 
-class SplitResult(namedtuple('SplitResult', 'scheme authority path query fragment')):
-    """Extend `namedtuple` to hold `urisplit()` results."""
+class SplitResult(namedtuple('SplitResult', _URI_COMPONENTS)):
+    """Extend :class:`collections.namedtuple` to hold :func:`urisplit`
+    results.
+
+    """
+
+    @property
+    def _splitauth(self):
+        if self.authority is None:
+            return (None, None, None)
+        else:
+            return _AUTHORITY_RE.match(self.authority).groups()
+
+    @property
+    def userinfo(self):
+        return self._splitauth[0]
+
+    @property
+    def host(self):
+        return self._splitauth[1]
+
+    @property
+    def port(self):
+        port = self._splitauth[2]
+        return int(port, 10) if port is not None else None
 
     def geturi(self):
         """Return the re-combined version of the original URI as a string."""
         return uriunsplit(self)
 
     def transform(self, ref, strict=False):
-        """Convert a URI reference relative to `self` into a `SplitResult`
-        representing its target.
+        """Convert a URI reference relative to `self` into a
+        :class:`SplitResult` representing its target.
 
         """
         scheme, authority, path, query, fragment = urisplit(ref)
@@ -212,21 +259,32 @@ class SplitResult(namedtuple('SplitResult', 'scheme authority path query fragmen
         # RFC 3986 5.2.2. Transform References
         if scheme is not None and (strict or scheme != self.scheme):
             path = urinormpath(path)
+            return SplitResult(scheme, authority, path, query, fragment)
+        if authority is not None:
+            path = urinormpath(path)
+            return SplitResult(self.scheme, authority, path, query, fragment)
+        if not path:
+            path = self.path
+            if query is None:
+                query = self.query
+        elif path.startswith('/'):
+            path = urinormpath(path)
+        elif self.authority is not None and not self.path:
+            path = urinormpath('/' + path)
         else:
-            if authority is not None:
-                path = urinormpath(path)
-            else:
-                if not path:
-                    path = self.path
-                    if query is None:
-                        query = self.query
-                elif path.startswith('/'):
-                    path = urinormpath(path)
-                elif self.authority is not None and not self.path:
-                    path = urinormpath('/' + path)
-                else:
-                    basepath = self.path[:self.path.rfind('/') + 1]
-                    path = urinormpath(basepath + path)
-                authority = self.authority
-            scheme = self.scheme
-        return SplitResult(scheme, authority, path, query, fragment)
+            path = urinormpath(self.path[:self.path.rfind('/') + 1] + path)
+        return SplitResult(self.scheme, self.authority, path, query, fragment)
+
+
+class DefragResult(namedtuple('DefragResult', 'uri fragment')):
+    """Extend :class:`collectionsnamedtuple` to hold :func:`uridefrag`
+    results.
+
+    """
+
+    def geturi(self):
+        """Return the re-combined version of the original URI as a string."""
+        if self.fragment is not None:
+            return self.uri + '#' + self.fragment
+        else:
+            return self.uri

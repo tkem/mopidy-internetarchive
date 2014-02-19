@@ -40,6 +40,7 @@ class InternetArchiveClient(object):
         self.search_url = urljoin(base_url, '/advancedsearch.php')
         self.metadata_url = urljoin(base_url, '/metadata/')
         self.download_url = urljoin(base_url, '/download/')
+        self.bookmarks_url = urljoin(base_url, '/bookmarks/')
         self.session = requests.Session()  # TODO: timeout, etc.
         self.cache = cache
 
@@ -53,27 +54,40 @@ class InternetArchiveClient(object):
             'start': start,
             'output': 'json'
         })
-
+        # invalid queries yield empty response
         if not response.content:
             raise self.SearchError(query)
         return self.SearchResult(response.json())
 
     @cachedmethod
-    def getitem(self, path):
+    def metadata(self, path):
         url = urljoin(self.metadata_url, path.lstrip('/'))
         response = self.session.get(url)
         data = response.json()
 
-        if not data or 'error' in data:
-            return None
+        if not data:
+            raise LookupError('Item %r not found' % path)
+        elif 'error' in data:
+            raise LookupError(data['error'])
         elif 'result' in data:
-            # only subitems produce { "result": ... }
             return data['result']
         else:
             return data
 
-    def geturl(self, identifier, filename):
-        return urljoin(self.download_url, identifier + '/' + filename)
+    @cachedmethod
+    def bookmarks(self, username):
+        url = urljoin(self.bookmarks_url, username)
+        response = self.session.get(url, params={'output': 'json'})
+        # requests for non-existant users yield text/xml response
+        if response.headers['Content-Type'] != 'application/json':
+            raise LookupError('User account %r not found' % username)
+        return response.json()
+
+    def geturl(self, identifier, filename=None):
+        if filename:
+            return urljoin(self.download_url, identifier + '/' + filename)
+        else:
+            return urljoin(self.download_url, identifier + '/')
 
     @classmethod
     def query_string(cls, query, op=None, group_op=None):
@@ -94,8 +108,8 @@ class InternetArchiveClient(object):
     @classmethod
     def quote_term(cls, term):
         term = cls.SPECIAL_CHAR_RE.sub(r'\\\1', term)
-        # only quote if term contains whitespace, otherwise something
-        # like date:"2014-01-01" will raise an error
+        # only quote if term contains whitespace, since
+        # date:"2014-01-01" will raise an error
         if any(c.isspace() for c in term):
             term = '"' + term + '"'
         return term
@@ -108,19 +122,20 @@ class InternetArchiveClient(object):
             self.docs = result['response']['docs']
 
         def __getitem__(self, key):
-            return self.docs.__getitem__(key)
+            return self.docs[key]
 
         def __len__(self):
-            return self.docs.__len__()
+            return len(self.docs)
 
         def __iter__(self):
-            return self.docs.__iter__()
+            return iter(self.docs)
 
     class SearchError(Exception):
 
         def __init__(self, query):
-            msg = 'Invalid query %r' % query
-            super(InternetArchiveClient.SearchError, self).__init__(msg)
+            super(InternetArchiveClient.SearchError, self).__init__(
+                'Invalid query %r' % query
+            )
 
 
 if __name__ == '__main__':
@@ -129,29 +144,33 @@ if __name__ == '__main__':
     import sys
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('arg', metavar='PATH | QUERY')
-    parser.add_argument('-b', '--base-url', default='http://archive.org')
+    parser.add_argument('arg', metavar='PATH | USER | QUERY')
+    parser.add_argument('-B', '--base', default='http://archive.org')
+    parser.add_argument('-b', '--bookmarks', action='store_true')
     parser.add_argument('-d', '--debug', action='store_true')
-    parser.add_argument('-e', '--encoding', default='utf-8')
+    parser.add_argument('-e', '--encoding', default=sys.getdefaultencoding())
     parser.add_argument('-f', '--fields', nargs='+')
     parser.add_argument('-i', '--indent', type=int, default=2)
     parser.add_argument('-q', '--query', action='store_true')
     parser.add_argument('-r', '--rows', type=int)
     parser.add_argument('-s', '--sort', nargs='+')
-    parser.add_argument('--start', type=int)
+    parser.add_argument('-S', '--start', type=int)
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.WARN)
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    client = InternetArchiveClient(args.base_url)
+    client = InternetArchiveClient(args.base)
+
     if args.query:
         query = args.arg.decode(args.encoding)
         if query.startswith('{'):
-            qs = client.query_string(eval(query))
-        else:
-            qs = query
-        result = client.search(qs, args.fields, args.sort, args.rows, args.start)
+            query = client.query_string(eval(query))
+        result = client.search(query, args.fields, args.sort, args.rows,
+                               args.start)
+    elif args.bookmarks:
+        result = client.bookmarks(args.arg)
     else:
-        result = client.getitem(args.arg)
+        result = client.metadata(args.arg)
+
     json.dump(result, sys.stdout, default=vars, indent=args.indent)
     sys.stdout.write('\n')

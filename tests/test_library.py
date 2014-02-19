@@ -23,7 +23,9 @@ class LibraryTest(unittest.TestCase):
             'browse_limit': None,
             'search_limit': None,
             'cache_size': 1,
-            'cache_ttl': 1
+            'cache_ttl': 1,
+            'bookmarks': ['mopidy'],
+            'bookmarks_label': "{0}'s Bookmarks"
         }
     }
 

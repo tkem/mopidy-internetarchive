@@ -5,7 +5,7 @@ import pykka
 
 from mopidy import backend
 
-from .client import InternetArchiveClient
+from .iaclient import InternetArchiveClient
 from .library import InternetArchiveLibraryProvider
 from .playback import InternetArchivePlaybackProvider
 
@@ -14,25 +14,26 @@ logger = logging.getLogger(__name__)
 
 class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
 
-    URI_SCHEME = 'internetarchive'
+    SCHEME = 'internetarchive'
 
-    uri_schemes = [URI_SCHEME]
+    uri_schemes = [SCHEME]
+
+    _cache = None
 
     def __init__(self, config, audio):
         super(InternetArchiveBackend, self).__init__()
         self.config = config
         self.client = InternetArchiveClient(
-            config[self.URI_SCHEME]['base_url'], cache=self.cache())
-        self.library = InternetArchiveLibraryProvider(
-            backend=self)
-        self.playback = InternetArchivePlaybackProvider(
-            audio=audio, backend=self)
+            config[self.SCHEME]['base_url'],
+            cache=self.cache
+        )
+        self.library = InternetArchiveLibraryProvider(self)
+        self.playback = InternetArchivePlaybackProvider(audio, self)
 
-    def getconfig(self, name):
-        return self.config[self.URI_SCHEME][name]
-
+    @property
     def cache(self):
         from .lrucache import LRUCache
-        size = self.getconfig('cache_size')
-        ttl = self.getconfig('cache_ttl')
-        return LRUCache(maxsize=size, ttl=ttl)
+        if self._cache is None:
+            config = self.config[self.SCHEME]
+            self._cache = LRUCache(config['cache_size'], config['cache_ttl'])
+        return self._cache
