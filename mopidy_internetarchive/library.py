@@ -1,8 +1,7 @@
 from __future__ import unicode_literals
 
+import collections
 import logging
-
-from collections import defaultdict
 
 from mopidy import backend
 from mopidy.models import SearchResult, Ref
@@ -31,21 +30,26 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         for identifier in self.config['collections']:
             try:
                 item = self.backend.client.metadata(identifier + '/metadata')
-                if item['mediatype'] == 'collection':
-                    collections[identifier] = self._docref(item)
-                else:
-                    logger.error('internetarchive item %r not a collection' % identifier)
             except Exception as e:
                 # TODO: handle temporary error (network connection, etc.)
-                logger.error('Error loading internetarchive %s: %s', identifier, e)
+                logger.error('Error loading item %s: %s', identifier, e)
+                continue
+            if item['mediatype'] == 'collection':
+                ref = self._docref(item)
+                collections[ref.uri] = ref
+            else:
+                logger.error('Item %r not a collection' % identifier)
         logger.info("Loaded %d Internet Archive collections", len(collections))
-
-        for name in self.config['bookmarks']:
-            collections[name] = Ref.directory(
-                uri=uricompose(self.backend.SCHEME, authority=(name + '@')),
-                name=self.config['bookmarks_label'].format(name)
-            )
         self.collections = collections
+
+        bookmarks = {}
+        for username in self.config['bookmarks']:
+            # TODO: prettier bookmarks URI, check for existence
+            uri = uricompose(self.backend.SCHEME, authority=(username + '@'))
+            name = self.config['bookmarks_label'].format(username)
+            bookmarks[uri] = Ref.directory(uri=uri, name=name)
+        logger.info("Loaded %d Internet Archive bookmarks", len(bookmarks))
+        self.bookmarks = bookmarks
 
     @property
     def config(self):
@@ -57,22 +61,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         try:
             if not uri:
                 return [self.root_directory]
-            if uri == self.root_directory.uri:
-                return self.collections.values()
-
-            uriparts = urisplit(uri)
-            if uriparts.userinfo:
-                return self._browse_bookmarks(uriparts.userinfo)
-            identifier = uriparts.path
-            if identifier in self.collections:
-                return self._browse_collection(identifier)
-            item = self.backend.client.metadata(identifier)
-            if item['metadata']['mediatype'] == 'collection':
-                return self._browse_collection(identifier)
-            elif item['metadata']['mediatype'] in self.config['mediatypes']:
-                return self._browse_item(item)
+            elif uri == self.root_directory.uri:
+                return self.collections.values() + self.bookmarks.values()
+            elif uri in self.collections:
+                return self._browse_collection(urisplit(uri).path)
+            elif uri in self.bookmarks:
+                return self._browse_bookmarks(urisplit(uri).userinfo)
             else:
-                return []
+                return self._browse_item(urisplit(uri).path)
         except Exception as error:
             logger.error('internetarchive browse %s: %s', uri, error)
             return []
@@ -152,11 +148,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         logger.debug("internetarchive found albums: %r", albums)
         return query.filter_albums(albums)
 
-    def _browse_bookmarks(self, username):
-        result = self.backend.client.getbookmarks(username)
-        logger.debug('bookmarks: %r', result)
-        return [self._docref(doc) for doc in result]
-
     def _browse_collection(self, identifier):
         result = self.backend.client.search(
             self.backend.client.query_string({
@@ -170,10 +161,16 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         )
         return [self._docref(doc) for doc in result]
 
-    def _browse_item(self, item):
+    def _browse_bookmarks(self, username):
+        result = self.backend.client.bookmarks(username)
+        return [self._docref(doc) for doc in result]
+
+    def _browse_item(self, identifier):
+        item = self.backend.client.metadata(identifier)
+        if item['metadata']['mediatype'] not in self.config['mediatypes']:
+            return []
         refs = []
         scheme = self.backend.SCHEME
-        identifier = item['metadata']['identifier']
         for f in self._files_by_format(item['files']):
             uri = uricompose(scheme, path=identifier, fragment=f['name'])
             # TODO: title w/slash or 'tmp'
@@ -189,7 +186,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return Ref.directory(uri=uri, name=name)
 
     def _files_by_format(self, files):
-        byformat = defaultdict(list)
+        byformat = collections.defaultdict(list)
         for f in files:
             byformat[f['format'].lower()].append(f)
         for fmt in [fmt.lower() for fmt in self.config['formats']]:

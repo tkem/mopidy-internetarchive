@@ -28,7 +28,7 @@ class Extension(ext.Extension):
         schema['browse_label'] = config.String()
         schema['bookmarks'] = config.List()
         schema['bookmarks_label'] = config.String()
-        schema['cache_size'] = config.Integer(minimum=1)
+        schema['cache_size'] = config.Integer(minimum=0)
         schema['cache_ttl'] = config.Integer(minimum=1)
         return schema
 
