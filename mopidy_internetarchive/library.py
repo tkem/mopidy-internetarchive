@@ -11,6 +11,13 @@ from .uritools import urisplit, uriunsplit
 
 logger = logging.getLogger(__name__)
 
+QUERY_MAP = {
+    'any': None,
+    'album': 'title',
+    'artist': 'creator',
+    'date': 'date'
+}
+
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
@@ -155,7 +162,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return [self._doc_to_ref(doc) for doc in result]
 
     def _browse_collection(self, identifier):
-        qs = self.backend.client.query_string(dict(collection=identifier))
+        qs = self.backend.client.query_string({'collection': identifier})
+        logger.debug('internetarchive query string: %r', qs)
         result = self.backend.client.search(
             self.browse_query + ' AND ' + qs,
             fields=self.BROWSE_FIELDS,
@@ -176,17 +184,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return refs
 
     def _find_albums(self, query):
-        terms = {}
-        for (field, values) in query.iteritems():
-            if field == "any":
-                terms[None] = values
-            elif field == "album":
-                terms['title'] = values
-            elif field == "artist":
-                terms['creator'] = values
-            elif field == 'date':
-                terms['date'] = values
-        qs = self.backend.client.query_string(terms, group='AND')
+        qs = self.backend.client.query_string({
+            QUERY_MAP[k]: query[k] for k in query if k in QUERY_MAP
+        }, group='AND')
         logger.debug('internetarchive query string: %r', qs)
         result = self.backend.client.search(
             self.search_query + ' AND ' + qs,
