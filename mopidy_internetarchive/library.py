@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import collections
 import logging
 
 from mopidy import backend
@@ -25,31 +24,17 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             uri=uricompose(backend.SCHEME, path='/'),
             name=self.config['browse_label']
         )
-
-        collections = {}
-        for identifier in self.config['collections']:
-            try:
-                item = self.backend.client.metadata(identifier + '/metadata')
-            except Exception as e:
-                # TODO: handle temporary error (network connection, etc.)
-                logger.error('Error loading item %s: %s', identifier, e)
-                continue
-            if item['mediatype'] == 'collection':
-                ref = self._docref(item)
-                collections[ref.uri] = ref
-            else:
-                logger.error('Item %r not a collection' % identifier)
-        logger.info("Loaded %d Internet Archive collections", len(collections))
-        self.collections = collections
-
-        bookmarks = {}
-        for username in self.config['bookmarks']:
-            # TODO: prettier bookmarks URI, check for existence
-            uri = uricompose(self.backend.SCHEME, authority=(username + '@'))
-            name = self.config['bookmarks_label'].format(username)
-            bookmarks[uri] = Ref.directory(uri=uri, name=name)
-        logger.info("Loaded %d Internet Archive bookmarks", len(bookmarks))
-        self.bookmarks = bookmarks
+        self.browse_query = self.backend.client.query_string({
+            'mediatype': self.config['mediatypes'],
+            'format': self.config['formats']
+        }, group='OR')
+        self.search_query = self.backend.client.query_string({
+            'collection': self.config['collections'],
+            'mediatype':  self.config['mediatypes'],
+            'format': self.config['formats']
+        }, group='OR')
+        self.bookmarks = self._load_bookmarks(self.config['bookmarks'])
+        self.collections = self._load_collections(self.config['collections'])
 
     @property
     def config(self):
@@ -62,15 +47,15 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             if not uri:
                 return [self.root_directory]
             elif uri == self.root_directory.uri:
-                return self.collections.values() + self.bookmarks.values()
-            elif uri in self.collections:
-                return self._browse_collection(urisplit(uri).path)
+                return self._browse_root()
             elif uri in self.bookmarks:
                 return self._browse_bookmarks(urisplit(uri).userinfo)
+            elif uri in self.collections:
+                return self._browse_collection(urisplit(uri).path)
             else:
                 return self._browse_item(urisplit(uri).path)
         except Exception as error:
-            logger.error('internetarchive browse %s: %s', uri, error)
+            logger.error('Error browsing %r: %s', uri, error)
             return []
 
     def lookup(self, uri):
@@ -86,7 +71,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             logger.debug("internetarchive files: %r", files)
             return item_to_tracks(item, files)
         except Exception as error:
-            logger.error('internetarchive lookup %s: %s', uri, error)
+            logger.error('Lookup error for %r: %s', uri, error)
             return []
 
     def find_exact(self, query=None, uris=None):
@@ -121,48 +106,68 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         _, _, identifier, _, filename = urisplit(uri)
         return self.backend.client.geturl(identifier.lstrip('/'), filename)
 
-    def _find_albums(self, query):
-        terms = {}
-        for (field, values) in query.iteritems():
-            if field == "any":
-                terms[None] = values
-            elif field == "album":
-                terms['title'] = values
-            elif field == "artist":
-                terms['creator'] = values
-            elif field == 'date':
-                terms['date'] = values
-        qs = self.backend.client.query_string(terms)
+    def _load_bookmarks(self, usernames):
+        refs = {}
+        for username in usernames:
+            try:
+                # raise error if username does not exit, cache for browsing
+                self.backend.client.bookmarks(username)
+            except Exception as e:
+                logger.error('Error loading bookmarks for %r: %s', username, e)
+                continue
+            uri = self._bookmarks_uri(username)
+            name = self.config['bookmarks_label'].format(username)
+            refs[uri] = Ref.directory(uri=uri, name=name)
+        if refs:
+            logger.info("Loaded %d Internet Archive bookmarks", len(refs))
+        return refs
 
-        result = self.backend.client.search(
-            qs + ' AND ' + self.backend.client.query_string({
-                'collection': self.config['collections'],
-                'mediatype':  self.config['mediatypes'],
-                'format': self.config['formats']
-            }, group_op='OR'),
-            fields=self.SEARCH_FIELDS,
-            sort=self.config['sort_order'],
-            rows=self.config['search_limit']
-        )
-        albums = [doc_to_album(doc) for doc in result]
-        logger.debug("internetarchive found albums: %r", albums)
-        return query.filter_albums(albums)
+    def _load_collections(self, identifiers):
+        refs = {}
+        for identifier in identifiers:
+            try:
+                item = self.backend.client.metadata(identifier + '/metadata')
+            except Exception as e:
+                logger.error('Error loading collection %r: %s', identifier, e)
+                continue
+            if item['mediatype'] != 'collection':
+                logger.error('Item %r is not a collection', identifier)
+                continue
+            uri = self._item_uri(identifier)
+            name = item.get('title', identifier)  # FIXME: title w/slash?
+            refs[uri] = Ref.directory(uri=uri, name=name)
+        if refs:
+            logger.info("Loaded %d Internet Archive collections", len(refs))
+        return refs
+
+    def _browse_root(self):
+        # fix temporary (e.g. network) errors at startup
+        if len(self.bookmarks) != len(self.config['bookmarks']):
+            missing = filter(
+                lambda v: self._bookmarks_uri(v) not in self.bookmarks,
+                self.config['bookmarks']
+            )
+            self.bookmarks.update(self._load_bookmarks(missing))
+        if len(self.collections) != len(self.config['collections']):
+            missing = filter(
+                lambda v: self._item_uri(v) not in self.collections,
+                self.config['collections']
+            )
+            self.collections.update(self._load_collections(missing))
+        return self.bookmarks.values() + self.collections.values()
+
+    def _browse_bookmarks(self, username):
+        result = self.backend.client.bookmarks(username)
+        return [self._docref(doc) for doc in result]
 
     def _browse_collection(self, identifier):
+        qs = self.backend.client.query_string(dict(collection=identifier))
         result = self.backend.client.search(
-            self.backend.client.query_string({
-                'collection': identifier,
-                'mediatype': self.config['mediatypes'],
-                'format': self.config['formats']
-            }, group_op='OR'),
+            self.browse_query + ' AND ' + qs,
             fields=self.BROWSE_FIELDS,
             sort=self.config['sort_order'],
             rows=self.config['browse_limit']
         )
-        return [self._docref(doc) for doc in result]
-
-    def _browse_bookmarks(self, username):
-        result = self.backend.client.bookmarks(username)
         return [self._docref(doc) for doc in result]
 
     def _browse_item(self, identifier):
@@ -185,8 +190,32 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         name = doc.get('title', identifier)
         return Ref.directory(uri=uri, name=name)
 
+    def _find_albums(self, query):
+        terms = {}
+        for (field, values) in query.iteritems():
+            if field == "any":
+                terms[None] = values
+            elif field == "album":
+                terms['title'] = values
+            elif field == "artist":
+                terms['creator'] = values
+            elif field == 'date':
+                terms['date'] = values
+        qs = self.backend.client.query_string(terms, group='AND')
+        logger.debug('internetarchive query string: %r', qs)
+        result = self.backend.client.search(
+            self.search_query + ' AND ' + qs,
+            fields=self.SEARCH_FIELDS,
+            sort=self.config['sort_order'],
+            rows=self.config['search_limit']
+        )
+        albums = [doc_to_album(doc) for doc in result]
+        logger.debug("internetarchive found albums: %r", albums)
+        return query.filter_albums(albums)
+
     def _files_by_format(self, files):
-        byformat = collections.defaultdict(list)
+        from collections import defaultdict
+        byformat = defaultdict(list)
         for f in files:
             byformat[f['format'].lower()].append(f)
         for fmt in [fmt.lower() for fmt in self.config['formats']]:
@@ -196,3 +225,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 if fmt in key:
                     return byformat[key]
         return []
+
+    def _bookmarks_uri(self, username):
+        return uricompose(self.backend.SCHEME, authority=(username + '@'))
+
+    def _item_uri(self, identifier):
+        return uricompose(self.backend.SCHEME, path=identifier)
+
+    def _file_uri(self, identifier, filename):
+        return uricompose(
+            self.backend.SCHEME, path=identifier, fragment=filename
+        )

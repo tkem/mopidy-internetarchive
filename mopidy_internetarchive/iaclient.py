@@ -90,7 +90,7 @@ class InternetArchiveClient(object):
             return urljoin(self.download_url, identifier + '/')
 
     @classmethod
-    def query_string(cls, query, op=None, group_op=None):
+    def query_string(cls, query, op=None, group=None):
         terms = []
         for (field, values) in query.iteritems():
             if not hasattr(values, '__iter__'):
@@ -98,8 +98,8 @@ class InternetArchiveClient(object):
             values = [cls.quote_term(value) for value in values]
             if len(values) == 1:
                 term = values[0]
-            elif group_op:
-                term = '(%s)' % (' ' + group_op + ' ').join(values)
+            elif group:
+                term = '(%s)' % (' ' + group + ' ').join(values)
             else:
                 term = '(%s)' % ' '.join(values)
             terms.append(field + ':' + term if field else term)
