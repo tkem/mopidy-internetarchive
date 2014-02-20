@@ -3,11 +3,11 @@ from __future__ import unicode_literals
 import logging
 
 from mopidy import backend
-from mopidy.models import SearchResult, Ref
+from mopidy.models import Album, Track, SearchResult, Ref
 
+from .parsing import *  # noqa
 from .query import Query
-from .translators import doc_to_album, item_to_tracks
-from .uritools import uricompose, urisplit
+from .uritools import urisplit, uriunsplit
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def __init__(self, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
         self.root_directory = Ref.directory(
-            uri=uricompose(backend.SCHEME, path='/'),
+            uri=uriunsplit([backend.SCHEME, None, '/', None, None]),
             name=self.config['browse_label']
         )
         self.browse_query = self.backend.client.query_string({
@@ -69,7 +69,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             else:
                 files = self._files_by_format(item['files'])
             logger.debug("internetarchive files: %r", files)
-            return item_to_tracks(item, files)
+            return self._item_to_tracks(item, files)
         except Exception as error:
             logger.error('Lookup error for %r: %s', uri, error)
             return []
@@ -80,10 +80,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if not query:
             return
         try:
-            return SearchResult(
-                uri=uricompose(self.backend.SCHEME, query=''),
-                albums=self._find_albums(Query(query, True))
-            )
+            return SearchResult(albums=self._find_albums(Query(query, True)))
         except Exception as error:
             logger.error('internetarchive find %r: %s', query, error)
             return None
@@ -94,10 +91,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if not query:
             return
         try:
-            return SearchResult(
-                uri=uricompose(self.backend.SCHEME, query=''),
-                albums=self._find_albums(Query(query, False))
-            )
+            return SearchResult(albums=self._find_albums(Query(query, False)))
         except Exception as error:
             logger.error('internetarchive search %r: %s', query, error)
             return None
@@ -134,7 +128,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 logger.error('Item %r is not a collection', identifier)
                 continue
             uri = self._item_uri(identifier)
-            name = item.get('title', identifier)  # FIXME: title w/slash?
+            name = parse_title(item.get('title'), identifier)
             refs[uri] = Ref.directory(uri=uri, name=name)
         if refs:
             logger.info("Loaded %d Internet Archive collections", len(refs))
@@ -158,7 +152,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def _browse_bookmarks(self, username):
         result = self.backend.client.bookmarks(username)
-        return [self._docref(doc) for doc in result]
+        return [self._doc_to_ref(doc) for doc in result]
 
     def _browse_collection(self, identifier):
         qs = self.backend.client.query_string(dict(collection=identifier))
@@ -168,27 +162,18 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=self.config['sort_order'],
             rows=self.config['browse_limit']
         )
-        return [self._docref(doc) for doc in result]
+        return [self._doc_to_ref(doc) for doc in result]
 
     def _browse_item(self, identifier):
         item = self.backend.client.metadata(identifier)
         if item['metadata']['mediatype'] not in self.config['mediatypes']:
             return []
         refs = []
-        scheme = self.backend.SCHEME
         for f in self._files_by_format(item['files']):
-            uri = uricompose(scheme, path=identifier, fragment=f['name'])
-            # TODO: title w/slash or 'tmp'
-            name = f.get('title', f['name'])
+            uri = self._file_uri(identifier, f['name'])
+            name = parse_title(f.get('title'), f['name'])
             refs.append(Ref.track(uri=uri, name=name))
         return refs
-
-    def _docref(self, doc):
-        identifier = doc['identifier']
-        uri = uricompose(self.backend.SCHEME, path=identifier)
-        # TODO: title w/slash
-        name = doc.get('title', identifier)
-        return Ref.directory(uri=uri, name=name)
 
     def _find_albums(self, query):
         terms = {}
@@ -209,9 +194,60 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=self.config['sort_order'],
             rows=self.config['search_limit']
         )
-        albums = [doc_to_album(doc) for doc in result]
+        albums = [self._doc_to_album(doc) for doc in result]
         logger.debug("internetarchive found albums: %r", albums)
         return query.filter_albums(albums)
+
+    def _bookmarks_uri(self, username):
+        authority = '%s@archive.org' % username
+        return uriunsplit([self.backend.SCHEME, authority, '/', None, None])
+
+    def _item_uri(self, identifier):
+        return uriunsplit([self.backend.SCHEME, None, identifier, None, None])
+
+    def _file_uri(self, itemid, filename):
+        return uriunsplit([self.backend.SCHEME, None, itemid, None, filename])
+
+    def _doc_to_album(self, doc):
+        return Album(
+            uri=self._item_uri(doc['identifier']),
+            name=parse_title(doc.get('title'), doc['identifier']),
+            artists=parse_creator(doc.get('creator')),
+            date=parse_date(doc.get('date'))
+        )
+
+    def _doc_to_ref(self, doc):
+        return Ref.directory(
+            uri=self._item_uri(doc['identifier']),
+            name=parse_title(doc.get('title'), doc['identifier'])
+        )
+
+    def _item_to_tracks(self, item, files):
+        metadata = item['metadata']
+        identifier = metadata['identifier']
+        album = self._doc_to_album(metadata)
+        byname = {f['name']: f for f in item['files']}
+
+        tracks = []
+        for f in files:
+            if 'original' in f and f['original'] in byname:
+                orig = byname[f['original']]
+                for key in orig:
+                    if not key in f or f[key] in ('', 'tmp'):
+                        f[key] = orig[key]
+
+            tracks.append(Track(
+                uri=self._file_uri(identifier, f['name']),
+                name=parse_title(f.get('title'), f['name']),
+                artists=parse_creator(f.get('creator'), album.artists),
+                album=album,
+                track_no=parse_track(f.get('track')),
+                date=parse_date(f.get('date'), album.date),
+                length=parse_length(f.get('length')),
+                bitrate=parse_bitrate(f.get('bitrate')),
+                last_modified=parse_mtime(f.get('mtime'))
+            ))
+        return tracks
 
     def _files_by_format(self, files):
         from collections import defaultdict
@@ -225,14 +261,3 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 if fmt in key:
                     return byformat[key]
         return []
-
-    def _bookmarks_uri(self, username):
-        return uricompose(self.backend.SCHEME, authority=(username + '@'))
-
-    def _item_uri(self, identifier):
-        return uricompose(self.backend.SCHEME, path=identifier)
-
-    def _file_uri(self, identifier, filename):
-        return uricompose(
-            self.backend.SCHEME, path=identifier, fragment=filename
-        )
