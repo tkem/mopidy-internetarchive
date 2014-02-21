@@ -34,7 +34,7 @@ class Extension(ext.Extension):
         schema['base_url'] = config.String()
         schema['collections'] = config.List()
         schema['mediatypes'] = config.List()
-        schema['bookmarks'] = config.List()
+        schema['bookmarks'] = config.List(optional=True)
         schema['formats'] = config.List()
         schema['sort_order'] = config.String(choices=SORT_ORDER_CHOICES)
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
