@@ -1,103 +1,113 @@
-****************************
+************************************************************************
 Mopidy-InternetArchive
-****************************
-
-.. image:: https://pypip.in/v/Mopidy-InternetArchive/badge.png
-    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
-    :alt: Latest PyPI version
-
-.. image:: https://pypip.in/d/Mopidy-InternetArchive/badge.png
-    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
-    :alt: Number of PyPI downloads
+************************************************************************
 
 `Mopidy <http://www.mopidy.com/>`_ extension for playing music and
 audio from the `Internet Archive <http://archive.org>`_.
 
 
 Installation
-============
+========================================================================
 
 Install by running::
 
     pip install Mopidy-InternetArchive
 
-Or install Debian/Ubuntu packages for `Mopidy-InternetArchive releases
+You can also download and install Debian/Ubuntu packages for
+Mopidy-InternetArchive `releases
 <https://github.com/tkem/mopidy-internetarchive/releases>`_.
 
 
 Configuration
-=============
+========================================================================
 
 Configuration items are still subject to change at this point, so be
 warned before trying any of these::
 
-  [internetarchive]
-  enabled = true
+    [internetarchive]
+    enabled = true
 
-  # archive.org base URL
-  base_url = http://archive.org
+    # archive.org base URL
+    base_url = http://archive.org
 
-  # collections for searching/browsing
-  collections =
-    audio
-    audio_bookspoetry
-    audio_foreign
-    audio_music
-    audio_news
-    audio_podcast
-    audio_religion
-    audio_tech
-    etree
-    netlabels
-    opensource_audio
-    radioprograms
+    # collections for searching/browsing
+    collections =
+        audio
+        audio_bookspoetry
+        audio_foreign
+        audio_music
+        audio_news
+        audio_podcast
+        audio_religion
+        audio_tech
+        etree
+        netlabels
+        opensource_audio
+        radioprograms
 
-  # media types for searching/browsing
-  mediatypes = audio, etree
+    # media types for searching/browsing
+    mediatypes = audio, etree
 
-  # streaming formats in order of preference
-  formats = VBR MP3, MP3
+    # user names for bookmark browsing
+    bookmarks =
 
-  # query sort order: <fieldname> (asc|desc), ...
-  sort_order = downloads desc
+    # streaming file formats, in order of preference
+    formats = VBR MP3, MP3
 
-  # top-level name for browsing
-  browse_label = Internet Archive
+    # query sort order: <fieldname> (asc|desc), where <fieldname>
+    # is one of: avg_rating, creatorSorter, date, downloads, month,
+    # publicdate, stars, titleSorter, week, year
+    sort_order = downloads desc
 
-  # maximum number of browse results
-  browse_limit = 1000
+    # maximum number of search results
+    search_limit = 100
 
-  # maximum number of search results
-  search_limit = 100
+    # maximum number of browse results
+    browse_limit = 100
 
-  # number of items and query results to cache
-  cache_size = 128
+    # top-level directory name for browsing
+    browse_label = Internet Archive
 
-  # cache time-to-live in seconds
-  cache_ttl = 86400
+    # bookmark directory names for browsing; {0} is user name
+    bookmarks_label = {0}'s Bookmarks
+
+    # number of items and query results to cache
+    cache_size = 128
+
+    # cache time-to-live in seconds
+    cache_ttl = 86400
+
+    # request timeout in seconds
+    timeout = 10
 
 
 Project resources
-=================
+========================================================================
 
 - `Source code <https://github.com/tkem/mopidy-internetarchive>`_
 - `Issue tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
-- `Download development snapshot <https://github.com/tkem/mopidy-internetarchive/tarball/master#egg=Mopidy-InternetArchive-dev>`_
 
 
 Changelog
-=========
+========================================================================
+
+v0.3.0 (2014-02-21)
+------------------------------------------------------------------------
+
+- Add bookmark browsing support.
+- Better filtering of search results.
+- Stability and performance improvements.
+
 
 v0.2.0 (2014-01-31)
--------------------
+------------------------------------------------------------------------
 
 - Add library browsing support.
-
 - Cache search results and metadata.
-
 - Properly quote/encode query terms.
 
+
 v0.1.0 (2014-01-24)
--------------------
+------------------------------------------------------------------------
 
 - Initial release.
