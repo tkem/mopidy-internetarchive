@@ -20,11 +20,11 @@ class QueryTest(unittest.TestCase):
         query = Query(kwargs, exact=False)
         self.assertFalse(query.match(model))
 
-    def assertExactQueryMatches(self, model, **kwargs):
+    def assertQueryMatchesExact(self, model, **kwargs):
         query = Query(kwargs, exact=True)
         self.assertTrue(query.match(model))
 
-    def assertNotExactQueryMatches(self, model, **kwargs):
+    def assertNotQueryMatchesExact(self, model, **kwargs):
         query = Query(kwargs, exact=True)
         self.assertFalse(query.match(model))
 
@@ -86,14 +86,14 @@ class QueryTest(unittest.TestCase):
             self.assertQueryMatches(artist, any=name)
             self.assertQueryMatches(artist, artist=name)
 
-        self.assertExactQueryMatches(artist, any='foo')
-        self.assertExactQueryMatches(artist, artist='foo')
+        self.assertQueryMatchesExact(artist, any='foo')
+        self.assertQueryMatchesExact(artist, artist='foo')
 
         self.assertNotQueryMatches(artist, any='none')
         self.assertNotQueryMatches(artist, artist='none')
 
-        self.assertNotExactQueryMatches(artist, any='none')
-        self.assertNotExactQueryMatches(artist, artist='none')
+        self.assertNotQueryMatchesExact(artist, any='none')
+        self.assertNotQueryMatchesExact(artist, artist='none')
 
     def test_match_album(self):
         artist = Artist(name='foo')
@@ -107,19 +107,19 @@ class QueryTest(unittest.TestCase):
             self.assertQueryMatches(album, any=name)
             self.assertQueryMatches(album, album=name)
 
-        self.assertExactQueryMatches(album, any='foo')
-        self.assertExactQueryMatches(album, artist='foo')
-        self.assertExactQueryMatches(album, albumartist='foo')
-        self.assertExactQueryMatches(album, any='bar')
-        self.assertExactQueryMatches(album, album='bar')
+        self.assertQueryMatchesExact(album, any='foo')
+        self.assertQueryMatchesExact(album, artist='foo')
+        self.assertQueryMatchesExact(album, albumartist='foo')
+        self.assertQueryMatchesExact(album, any='bar')
+        self.assertQueryMatchesExact(album, album='bar')
 
         self.assertNotQueryMatches(album, any='none')
         self.assertNotQueryMatches(album, artist='bar')
         self.assertNotQueryMatches(album, album='foo')
 
-        self.assertNotExactQueryMatches(album, any='none')
-        self.assertNotExactQueryMatches(album, artist='bar')
-        self.assertNotExactQueryMatches(album, album='foo')
+        self.assertNotQueryMatchesExact(album, any='none')
+        self.assertNotQueryMatchesExact(album, artist='bar')
+        self.assertNotQueryMatchesExact(album, album='foo')
 
     def test_match_track(self):
         artist = Artist(name='foo')
@@ -139,14 +139,14 @@ class QueryTest(unittest.TestCase):
             self.assertQueryMatches(track, any=name)
             self.assertQueryMatches(track, track_name=name)
 
-        self.assertExactQueryMatches(track, any='foo')
-        self.assertExactQueryMatches(track, artist='foo')
-        self.assertExactQueryMatches(track, any='bar')
-        self.assertExactQueryMatches(track, album='bar')
-        self.assertExactQueryMatches(track, any='v/a')
-        self.assertExactQueryMatches(track, albumartist='v/a')
-        self.assertExactQueryMatches(track, any='zyx')
-        self.assertExactQueryMatches(track, track_name='zyx')
+        self.assertQueryMatchesExact(track, any='foo')
+        self.assertQueryMatchesExact(track, artist='foo')
+        self.assertQueryMatchesExact(track, any='bar')
+        self.assertQueryMatchesExact(track, album='bar')
+        self.assertQueryMatchesExact(track, any='v/a')
+        self.assertQueryMatchesExact(track, albumartist='v/a')
+        self.assertQueryMatchesExact(track, any='zyx')
+        self.assertQueryMatchesExact(track, track_name='zyx')
 
         self.assertNotQueryMatches(track, any='none')
         self.assertNotQueryMatches(track, artist='bar')
@@ -154,8 +154,8 @@ class QueryTest(unittest.TestCase):
         self.assertNotQueryMatches(track, albumartist='zyx')
         self.assertNotQueryMatches(track, track_name='v/a')
 
-        self.assertNotExactQueryMatches(track, any='none')
-        self.assertNotExactQueryMatches(track, artist='bar')
-        self.assertNotExactQueryMatches(track, album='foo')
-        self.assertNotExactQueryMatches(track, albumartist='zyx')
-        self.assertNotExactQueryMatches(track, track_name='v/a')
+        self.assertNotQueryMatchesExact(track, any='none')
+        self.assertNotQueryMatchesExact(track, artist='bar')
+        self.assertNotQueryMatchesExact(track, album='foo')
+        self.assertNotQueryMatchesExact(track, albumartist='zyx')
+        self.assertNotQueryMatchesExact(track, track_name='v/a')
