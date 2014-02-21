@@ -96,13 +96,15 @@ class Query(collections.Mapping):
         __hash__ = None
 
     def __init__(self, query, exact=False):
+        if not query:
+            raise LookupError('Empty query not allowed')
         self.__query = {}
         for field, values in query.iteritems():
             if field not in QUERY_FIELDS:
                 raise LookupError('Invalid query field "%s"' % field)
             if not values:
                 raise LookupError('Missing query value for "%s"' % field)
-            if not hasattr(values, '__iter__'):
+            if isinstance(values, basestring):
                 values = [values]
             if not all(values):
                 raise LookupError('Missing query value for "%s"' % field)

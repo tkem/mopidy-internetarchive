@@ -18,14 +18,15 @@ class LibraryTest(unittest.TestCase):
             'collections': ['etree', 'audio'],
             'mediatypes': ['etree', 'audio'],
             'formats': ['MP3'],
-            'sort_order': ['downloads desc'],
+            'sort_order': 'downloads desc',
             'browse_label': 'ia',
             'browse_limit': None,
             'search_limit': None,
             'cache_size': 1,
             'cache_ttl': 1,
             'bookmarks': ['mopidy'],
-            'bookmarks_label': "{0}'s Bookmarks"
+            'bookmarks_label': "{0}'s Bookmarks",
+            'timeout': None
         }
     }
 

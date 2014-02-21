@@ -4,6 +4,19 @@ from mopidy import config, ext
 
 __version__ = '0.2.0'
 
+SORT_ORDER_CHOICES = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
+    'avg_rating',
+    'creatorSorter'
+    'date',
+    'downloads',
+    'month',
+    'publicdate',
+    'stars',
+    'titleSorter',
+    'week',
+    'year'
+)]
+
 
 class Extension(ext.Extension):
 
@@ -22,14 +35,15 @@ class Extension(ext.Extension):
         schema['collections'] = config.List()
         schema['mediatypes'] = config.List()
         schema['formats'] = config.List()
-        schema['sort_order'] = config.List()
+        schema['sort_order'] = config.String(choices=SORT_ORDER_CHOICES)
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
         schema['browse_limit'] = config.Integer(minimum=1, optional=True)
         schema['browse_label'] = config.String()
         schema['bookmarks'] = config.List()
         schema['bookmarks_label'] = config.String()
-        schema['cache_size'] = config.Integer(minimum=0)
+        schema['cache_size'] = config.Integer(minimum=1)
         schema['cache_ttl'] = config.Integer(minimum=1)
+        schema['timeout'] = config.Integer(minimum=0, optional=True)
         return schema
 
     def setup(self, registry):

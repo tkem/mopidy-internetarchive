@@ -5,7 +5,9 @@ import logging
 import re
 import requests
 
-from urlparse import urljoin
+from urlparse import urlsplit, urljoin
+
+BASE_URL = 'http://archive.org/'
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +38,13 @@ class InternetArchiveClient(object):
 
     SPECIAL_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
-    def __init__(self, base_url='http://archive.org/', cache=None):
+    def __init__(self, base_url=BASE_URL, timeout=None, cache=None):
         self.search_url = urljoin(base_url, '/advancedsearch.php')
         self.metadata_url = urljoin(base_url, '/metadata/')
         self.download_url = urljoin(base_url, '/download/')
         self.bookmarks_url = urljoin(base_url, '/bookmarks/')
-        self.session = requests.Session()  # TODO: timeout, etc.
+        self.session = requests.Session()
+        self.timeout = timeout
         self.cache = cache
 
     @cachedmethod
@@ -53,20 +56,19 @@ class InternetArchiveClient(object):
             'rows': rows,
             'start': start,
             'output': 'json'
-        })
-        # invalid queries yield empty response
+        }, timeout=self.timeout)
         if not response.content:
-            raise self.SearchError(query)
+            raise self.SearchError(urlsplit(response.url).query)
         return self.SearchResult(response.json())
 
     @cachedmethod
     def metadata(self, path):
         url = urljoin(self.metadata_url, path.lstrip('/'))
-        response = self.session.get(url)
+        response = self.session.get(url, timeout=self.timeout)
         data = response.json()
 
         if not data:
-            raise LookupError('Item %r not found' % path)
+            raise LookupError('Internet Archive item %r not found' % path)
         elif 'error' in data:
             raise LookupError(data['error'])
         elif 'result' in data:
@@ -76,8 +78,8 @@ class InternetArchiveClient(object):
 
     @cachedmethod
     def bookmarks(self, username):
-        url = urljoin(self.bookmarks_url, username)
-        response = self.session.get(url, params={'output': 'json'})
+        url = urljoin(self.bookmarks_url, username) + '?output=json'
+        response = self.session.get(url, timeout=self.timeout)
         # requests for non-existant users yield text/xml response
         if response.headers['Content-Type'] != 'application/json':
             raise LookupError('User account %r not found' % username)
@@ -133,9 +135,8 @@ class InternetArchiveClient(object):
     class SearchError(Exception):
 
         def __init__(self, query):
-            super(InternetArchiveClient.SearchError, self).__init__(
-                'Invalid query %r' % query
-            )
+            msg = 'Invalid Internet Archive query %r' % query
+            super(InternetArchiveClient.SearchError, self).__init__(msg)
 
 
 if __name__ == '__main__':
@@ -155,11 +156,12 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--rows', type=int)
     parser.add_argument('-s', '--sort', nargs='+')
     parser.add_argument('-S', '--start', type=int)
+    parser.add_argument('-t', '--timeout', type=float)
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
-    client = InternetArchiveClient(args.base)
+    client = InternetArchiveClient(args.base, timeout=args.timeout)
 
     if args.query:
         query = args.arg.decode(args.encoding)
