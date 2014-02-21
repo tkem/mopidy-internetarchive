@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from collections import defaultdict
+from time import time
 
 from mopidy import backend
 from mopidy.models import Album, Track, SearchResult, Ref
@@ -20,6 +21,19 @@ QUERY_FIELDS = {
     'albumartist': 'creator',
     'date': 'date'
 }
+
+
+class DebugTimer(object):
+    def __init__(self, msg):
+        self.msg = msg
+        self.start = None
+
+    def __enter__(self):
+        self.start = time()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        duration = (time() - self.start) * 1000
+        logger.debug('%s took %dms', self.msg, duration)
 
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
@@ -119,7 +133,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         for username in usernames:
             try:
                 # raise error if username does not exit, cache for later
-                self.backend.client.bookmarks(username)
+                with DebugTimer('Loading bookmarks for %r' % username):
+                    self.backend.client.bookmarks(username)
             except Exception as e:
                 logger.warn("Cannot load %s's Internet Archive bookmarks: %s",
                             username, e)
@@ -134,7 +149,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         refs = {}
         for identifier in identifiers:
             try:
-                item = self.backend.client.metadata(identifier + '/metadata')
+                with DebugTimer('Loading metadata for %r' % identifier):
+                    path = identifier + '/metadata'
+                    item = self.backend.client.metadata(path)
             except Exception as e:
                 logger.warn('Cannot load Internet Archive item %r: %s',
                             identifier, e)
@@ -150,18 +167,19 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return refs
 
     def _browse_bookmarks(self, username):
-        result = self.backend.client.bookmarks(username)
+        with DebugTimer('Loading bookmarks for %r' % username):
+            result = self.backend.client.bookmarks(username)
         return [self._doc_to_ref(doc) for doc in result]
 
     def _browse_collection(self, identifier):
         qs = self.backend.client.query_string({'collection': identifier})
-        logger.debug('internetarchive browse query: %r', qs)
-        result = self.backend.client.search(
-            self.browse_query + ' ' + qs,
-            fields=self.BROWSE_FIELDS,
-            sort=(self.config['sort_order'],),
-            rows=self.config['browse_limit']
-        )
+        with DebugTimer('Searching for %r' % qs):
+            result = self.backend.client.search(
+                self.browse_query + ' ' + qs,
+                fields=self.BROWSE_FIELDS,
+                sort=(self.config['sort_order'],),
+                rows=self.config['browse_limit']
+            )
         return [self._doc_to_ref(doc) for doc in result]
 
     def _browse_item(self, identifier):
@@ -203,17 +221,18 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         qs = self.backend.client.query_string({
             QUERY_FIELDS[k]: query[k] for k in query if k in QUERY_FIELDS
         }, group='AND')
-        logger.debug('internetarchive search query: %r', qs)
-        result = self.backend.client.search(
-            self.search_query + ' ' + qs,
-            fields=self.SEARCH_FIELDS,
-            sort=(self.config['sort_order'],),
-            rows=self.config['search_limit']
-        )
+        with DebugTimer('Searching for %r' % qs):
+            result = self.backend.client.search(
+                self.search_query + ' ' + qs,
+                fields=self.SEARCH_FIELDS,
+                sort=(self.config['sort_order'],),
+                rows=self.config['search_limit']
+            )
         return query.filter_albums(self._doc_to_album(doc) for doc in result)
 
     def _get_tracks(self, identifier):
-        item = self.backend.client.metadata(identifier)
+        with DebugTimer('Loading item %r' % identifier):
+            item = self.backend.client.metadata(identifier)
         byname = {f['name']: f for f in item['files']}
         album = self._doc_to_album(item['metadata'])
 
