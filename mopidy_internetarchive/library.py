@@ -228,7 +228,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 sort=(self.config['sort_order'],),
                 rows=self.config['search_limit']
             )
-        return query.filter_albums(self._doc_to_album(doc) for doc in result)
+        albums = (self._doc_to_album(doc) for doc in result)
+        return [album for album in albums if query.match_album(album)]
 
     def _get_tracks(self, identifier):
         with DebugTimer('Loading item %r' % identifier):
