@@ -95,6 +95,8 @@ class InternetArchiveClient(object):
     def query_string(cls, query, op=None, group=None):
         terms = []
         for (field, values) in query.iteritems():
+            if not values:
+                continue
             if not hasattr(values, '__iter__'):
                 values = [values]
             values = [cls.quote_term(value) for value in values]

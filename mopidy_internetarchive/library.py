@@ -50,12 +50,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         )
         self.browse_query = self.backend.client.query_string({
             'mediatype': self.config['mediatypes'],
-            'format': self.config['formats']
+            'format': self.config['formats'],
+            '-collection': self.config['excludes']
         }, group='OR')
         self.search_query = self.backend.client.query_string({
             'collection': self.config['collections'],
             'mediatype':  self.config['mediatypes'],
-            'format': self.config['formats']
+            'format': self.config['formats'],
+            '-collection': self.config['excludes']
         }, group='OR')
         self.bookmarks = self._load_bookmarks(self.config['bookmarks'])
         self.collections = self._load_collections(self.config['collections'])
