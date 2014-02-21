@@ -2,35 +2,56 @@ from __future__ import unicode_literals
 
 import unittest
 
-from mopidy.models import Artist, Album, Track
+from mopidy.models import Artist, Album, Track, Ref
 from mopidy_internetarchive.query import Query
 
 
-def normcase(*strings):
+def anycase(*strings):
     return [s.upper() for s in strings] + [s.lower() for s in strings]
 
 
-class ParsingTest(unittest.TestCase):
+class QueryTest(unittest.TestCase):
 
-    artists = {name: Artist(name=name) for name in [
-        'foo', 'FOO', 'bar', 'BAR'
-    ]}
+    def assertQueryMatches(self, model, **kwargs):
+        query = Query(kwargs, exact=False)
+        self.assertTrue(query.match(model))
 
-    albums = {kwargs['name']: Album(**kwargs) for kwargs in [
-        dict(name='foo', artists=[artists['foo']]),
-        dict(name='FOO', artists=[artists['FOO']]),
-        dict(name='bar', artists=[artists['bar']]),
-        dict(name='BAR', artists=[artists['bar']]),
-    ]}
+    def assertNotQueryMatches(self, model, **kwargs):
+        query = Query(kwargs, exact=False)
+        self.assertFalse(query.match(model))
 
-    tracks = {kwargs['name']: Track(**kwargs) for kwargs in [
-        dict(name='foo', artists=[artists['foo']], album=albums['foo']),
-        dict(name='FOO', artists=[artists['FOO']], album=albums['FOO']),
-        dict(name='bar', artists=[artists['bar']], album=albums['bar']),
-        dict(name='BAR', artists=[artists['BAR']], album=albums['bar']),
-    ]}
+    def assertExactQueryMatches(self, model, **kwargs):
+        query = Query(kwargs, exact=True)
+        self.assertTrue(query.match(model))
+
+    def assertNotExactQueryMatches(self, model, **kwargs):
+        query = Query(kwargs, exact=True)
+        self.assertFalse(query.match(model))
 
     def test_create_query(self):
+        for exact in (True, False):
+            q1 = Query(dict(any='foo'), exact)
+            self.assertEqual(len(q1), 1)
+            self.assertItemsEqual(q1, ['any'])
+            self.assertEqual(len(q1['any']), 1)
+            self.assertEqual(q1['any'][0], 'foo')
+            self.assertNotEqual(q1['any'][0], 'bar')
+
+            q2 = Query(dict(any=['foo', 'bar'], artist='x'), exact)
+            self.assertEqual(len(q2), 2)
+            self.assertItemsEqual(q2, ['any', 'artist'])
+            self.assertEqual(len(q2['any']), 2)
+            self.assertEqual(len(q2['artist']), 1)
+            self.assertEqual(q2['any'][0], 'foo')
+            self.assertEqual(q2['any'][1], 'bar')
+            self.assertEqual(q2['artist'][0], 'x')
+
+        q1 = Query(dict(any='foo'), False)
+        q2 = Query(dict(any='foo'), True)
+        # so we can distinguish them in logs, etc.
+        self.assertNotEqual(repr(q1['any'][0]), repr(q2['any'][0]))
+
+    def test_query_errors(self):
         for exact in (True, False):
             with self.assertRaises(LookupError):
                 Query(None, exact)
@@ -54,216 +75,87 @@ class ParsingTest(unittest.TestCase):
                 Query({'any': ['']}, exact)
             with self.assertRaises(LookupError):
                 Query({'foo': 'bar'}, exact)
+            with self.assertRaises(TypeError):
+                q = Query(dict(any='foo'), exact)
+                q.match(Ref(name='foo'))
 
-            q1 = Query(dict(any='foo'), exact)
-            self.assertEqual(len(q1), 1)
-            self.assertItemsEqual(q1, ['any'])
-            self.assertEqual(len(q1['any']), 1)
-            self.assertEqual(q1['any'][0], 'foo')
-            self.assertNotEqual(q1['any'][0], 'bar')
+    def test_match_artist(self):
+        artist = Artist(name='foo')
 
-            q2 = Query(dict(any=['foo', 'bar'], artist='x'), exact)
-            self.assertEqual(len(q2), 2)
-            self.assertItemsEqual(q2, ['any', 'artist'])
-            self.assertEqual(len(q2['any']), 2)
-            self.assertEqual(len(q2['artist']), 1)
-            self.assertEqual(q2['any'][0], 'foo')
-            self.assertEqual(q2['any'][1], 'bar')
-            self.assertEqual(q2['artist'][0], 'x')
+        for name in anycase('f', 'o', 'fo', 'oo', 'foo'):
+            self.assertQueryMatches(artist, any=name)
+            self.assertQueryMatches(artist, artist=name)
 
-        q1 = Query(dict(any='foo'), False)
-        q2 = Query(dict(any='foo'), True)
-        # so we can distinguish them in logs, etc.
-        self.assertNotEqual(repr(q1['any'][0]), repr(q2['any'][0]))
+        self.assertExactQueryMatches(artist, any='foo')
+        self.assertExactQueryMatches(artist, artist='foo')
 
-    def test_filter_artists(self):
-        def q(**kwargs):
-            query = Query(kwargs, exact=False)
-            return query.filter_artists(self.artists.values())
+        self.assertNotQueryMatches(artist, any='none')
+        self.assertNotQueryMatches(artist, artist='none')
 
-        self.assertEqual(q(any='x'), [])
-        self.assertEqual(q(artist='x'), [])
+        self.assertNotExactQueryMatches(artist, any='none')
+        self.assertNotExactQueryMatches(artist, artist='none')
 
-        for artist in normcase('f', 'o', 'fo', 'oo', 'foo'):
-            self.assertItemsEqual(
-                q(any=artist),
-                [self.artists['foo'], self.artists['FOO']]
-            )
-            self.assertItemsEqual(
-                q(artist=artist),
-                [self.artists['foo'], self.artists['FOO']]
-            )
+    def test_match_album(self):
+        artist = Artist(name='foo')
+        album = Album(name='bar', artists=[artist])
 
-    def test_filter_artists_exact(self):
-        def q(**kwargs):
-            query = Query(kwargs, exact=True)
-            return query.filter_artists(self.artists.values())
+        for name in anycase('f', 'o', 'fo', 'oo', 'foo'):
+            self.assertQueryMatches(album, any=name)
+            self.assertQueryMatches(album, artist=name)
+            self.assertQueryMatches(album, albumartist=name)
+        for name in anycase('b', 'a', 'ba', 'ar', 'bar'):
+            self.assertQueryMatches(album, any=name)
+            self.assertQueryMatches(album, album=name)
 
-        self.assertEqual(q(any='x'), [])
-        self.assertEqual(q(artist='x'), [])
+        self.assertExactQueryMatches(album, any='foo')
+        self.assertExactQueryMatches(album, artist='foo')
+        self.assertExactQueryMatches(album, albumartist='foo')
+        self.assertExactQueryMatches(album, any='bar')
+        self.assertExactQueryMatches(album, album='bar')
 
-        self.assertEqual(q(any='foo'), [self.artists['foo']])
-        self.assertEqual(q(artist='foo'), [self.artists['foo']])
-        self.assertEqual(q(any='FOO'), [self.artists['FOO']])
-        self.assertEqual(q(artist='FOO'), [self.artists['FOO']])
+        self.assertNotQueryMatches(album, any='none')
+        self.assertNotQueryMatches(album, artist='bar')
+        self.assertNotQueryMatches(album, album='foo')
 
-    def test_filter_albums(self):
-        def q(**kwargs):
-            query = Query(kwargs, exact=False)
-            return query.filter_albums(self.albums.values())
+        self.assertNotExactQueryMatches(album, any='none')
+        self.assertNotExactQueryMatches(album, artist='bar')
+        self.assertNotExactQueryMatches(album, album='foo')
 
-        self.assertEqual(q(any='x'), [])
-        self.assertEqual(q(artist='x'), [])
-        self.assertEqual(q(album='x'), [])
-        self.assertEqual(q(albumartist='x'), [])
+    def test_match_track(self):
+        artist = Artist(name='foo')
+        album = Album(name='bar', artists=[Artist(name='v/a')])
+        track = Track(name='zyx', album=album, artists=[artist])
 
-        for name in normcase('f', 'o', 'fo', 'oo', 'foo'):
-            self.assertItemsEqual(
-                q(any=name),
-                [self.albums['foo'], self.albums['FOO']]
-            )
-            self.assertItemsEqual(
-                q(artist=name),
-                [self.albums['foo'], self.albums['FOO']]
-            )
-            self.assertItemsEqual(
-                q(album=name),
-                [self.albums['foo'], self.albums['FOO']]
-            )
-            self.assertItemsEqual(
-                q(albumartist=name),
-                [self.albums['foo'], self.albums['FOO']]
-            )
+        for name in anycase('f', 'o', 'fo', 'oo', 'foo'):
+            self.assertQueryMatches(track, any=name)
+            self.assertQueryMatches(track, artist=name)
+        for name in anycase('b', 'a', 'ba', 'ar', 'bar'):
+            self.assertQueryMatches(track, any=name)
+            self.assertQueryMatches(track, album=name)
+        for name in anycase('v', '/', 'v/', '/a', 'v/a'):
+            self.assertQueryMatches(track, any=name)
+            self.assertQueryMatches(track, albumartist=name)
+        for name in anycase('z', 'y', 'zy', 'yx', 'zyx'):
+            self.assertQueryMatches(track, any=name)
+            self.assertQueryMatches(track, track_name=name)
 
-        self.assertItemsEqual(
-            q(album='foo', albumartist='foo'),
-            [self.albums['foo'], self.albums['FOO']]
-        )
-        self.assertItemsEqual(
-            q(album='foo', albumartist='bar'),
-            []
-        )
-        self.assertItemsEqual(
-            q(albumartist='bar'),
-            [self.albums['bar'], self.albums['BAR']]
-        )
-        self.assertItemsEqual(
-            q(album='bar', albumartist='bar'),
-            [self.albums['bar'], self.albums['BAR']]
-        )
+        self.assertExactQueryMatches(track, any='foo')
+        self.assertExactQueryMatches(track, artist='foo')
+        self.assertExactQueryMatches(track, any='bar')
+        self.assertExactQueryMatches(track, album='bar')
+        self.assertExactQueryMatches(track, any='v/a')
+        self.assertExactQueryMatches(track, albumartist='v/a')
+        self.assertExactQueryMatches(track, any='zyx')
+        self.assertExactQueryMatches(track, track_name='zyx')
 
-    def test_filter_albums_exact(self):
-        def q(**kwargs):
-            query = Query(kwargs, exact=True)
-            return query.filter_albums(self.albums.values())
+        self.assertNotQueryMatches(track, any='none')
+        self.assertNotQueryMatches(track, artist='bar')
+        self.assertNotQueryMatches(track, album='foo')
+        self.assertNotQueryMatches(track, albumartist='zyx')
+        self.assertNotQueryMatches(track, track_name='v/a')
 
-        self.assertEqual(q(any='x'), [])
-        self.assertEqual(q(artist='x'), [])
-        self.assertEqual(q(album='x'), [])
-        self.assertEqual(q(albumartist='x'), [])
-
-        self.assertEqual(q(any='foo'), [self.albums['foo']])
-        self.assertEqual(q(artist='foo'), [self.albums['foo']])
-        self.assertEqual(q(album='foo'), [self.albums['foo']])
-        self.assertEqual(q(albumartist='foo'), [self.albums['foo']])
-
-        self.assertItemsEqual(
-            q(album='foo', albumartist='foo'),
-            [self.albums['foo']]
-        )
-        self.assertItemsEqual(
-            q(album='foo', albumartist='bar'),
-            []
-        )
-        self.assertItemsEqual(
-            q(albumartist='bar'),
-            [self.albums['bar'], self.albums['BAR']]
-        )
-        self.assertItemsEqual(
-            q(album='bar', albumartist='bar'),
-            [self.albums['bar']]
-        )
-
-    def test_filter_tracks(self):
-        def q(**kwargs):
-            query = Query(kwargs, exact=False)
-            return query.filter_tracks(self.tracks.values())
-
-        self.assertEqual(q(any='x'), [])
-        self.assertEqual(q(artist='x'), [])
-        self.assertEqual(q(album='x'), [])
-        self.assertEqual(q(albumartist='x'), [])
-        self.assertEqual(q(track_name='x'), [])
-
-        for name in normcase('f', 'o', 'fo', 'oo', 'foo'):
-            self.assertItemsEqual(
-                q(any=name),
-                [self.tracks['foo'], self.tracks['FOO']]
-            )
-            self.assertItemsEqual(
-                q(artist=name),
-                [self.tracks['foo'], self.tracks['FOO']]
-            )
-            self.assertItemsEqual(
-                q(album=name),
-                [self.tracks['foo'], self.tracks['FOO']]
-            )
-            self.assertItemsEqual(
-                q(albumartist=name),
-                [self.tracks['foo'], self.tracks['FOO']]
-            )
-            self.assertItemsEqual(
-                q(track_name=name),
-                [self.tracks['foo'], self.tracks['FOO']]
-            )
-
-        self.assertItemsEqual(
-            q(track_name='foo', artist='foo'),
-            [self.tracks['foo'], self.tracks['FOO']]
-        )
-        self.assertItemsEqual(
-            q(track_name='foo', artist='bar'),
-            []
-        )
-        self.assertItemsEqual(
-            q(album='bar'),
-            [self.tracks['bar'], self.tracks['BAR']]
-        )
-        self.assertItemsEqual(
-            q(artist='bar'),
-            [self.tracks['bar'], self.tracks['BAR']]
-        )
-
-    def test_filter_tracks_exact(self):
-        def q(**kwargs):
-            query = Query(kwargs, exact=True)
-            return query.filter_tracks(self.tracks.values())
-
-        self.assertEqual(q(any='x'), [])
-        self.assertEqual(q(artist='x'), [])
-        self.assertEqual(q(album='x'), [])
-        self.assertEqual(q(albumartist='x'), [])
-        self.assertEqual(q(track_name='x'), [])
-
-        self.assertEqual(q(any='foo'), [self.tracks['foo']])
-        self.assertEqual(q(artist='foo'), [self.tracks['foo']])
-        self.assertEqual(q(album='foo'), [self.tracks['foo']])
-        self.assertEqual(q(albumartist='foo'), [self.tracks['foo']])
-        self.assertEqual(q(track_name='foo'), [self.tracks['foo']])
-
-        self.assertItemsEqual(
-            q(track_name='foo', artist='foo'),
-            [self.tracks['foo']]
-        )
-        self.assertItemsEqual(
-            q(track_name='foo', artist='bar'),
-            []
-        )
-        self.assertItemsEqual(
-            q(album='bar'),
-            [self.tracks['bar'], self.tracks['BAR']]
-        )
-        self.assertItemsEqual(
-            q(artist='bar'),
-            [self.tracks['bar']]
-        )
+        self.assertNotExactQueryMatches(track, any='none')
+        self.assertNotExactQueryMatches(track, artist='bar')
+        self.assertNotExactQueryMatches(track, album='foo')
+        self.assertNotExactQueryMatches(track, albumartist='zyx')
+        self.assertNotExactQueryMatches(track, track_name='v/a')

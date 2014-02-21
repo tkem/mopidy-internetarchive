@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import collections
 import logging
 
+from mopidy.models import Artist, Album, Track
+
 logger = logging.getLogger(__name__)
 
 QUERY_FIELDS = {
@@ -80,6 +82,10 @@ ARTIST_FILTERS['any'] = _any_filter(ARTIST_FILTERS)
 
 class Query(collections.Mapping):
 
+    _track_filter = None
+    _album_filter = None
+    _artist_filter = None
+
     class QV(unicode):
         def __new__(cls, value):
             return super(Query.QV, cls).__new__(cls, value.strip().lower())
@@ -122,21 +128,37 @@ class Query(collections.Mapping):
     def __len__(self):
         return self.__query.__len__()
 
-    def filter_tracks(self, tracks):
-        return filter(self._get_filter(TRACK_FILTERS), tracks)
+    def match(self, model):
+        if isinstance(model, Track):
+            return self.match_track(model)
+        elif isinstance(model, Album):
+            return self.match_album(model)
+        elif isinstance(model, Artist):
+            return self.match_artist(model)
+        else:
+            raise TypeError('Invalid type: %s' % type(model))
 
-    def filter_albums(self, albums):
-        return filter(self._get_filter(ALBUM_FILTERS), albums)
+    def match_artist(self, artist):
+        if not self._artist_filter:
+            self._artist_filter = self._filter(ARTIST_FILTERS)
+        return self._artist_filter(artist)
 
-    def filter_artists(self, artists):
-        return filter(self._get_filter(ARTIST_FILTERS), artists)
+    def match_album(self, album):
+        if not self._album_filter:
+            self._album_filter = self._filter(ALBUM_FILTERS)
+        return self._album_filter(album)
 
-    def _get_filter(self, filtermap):
+    def match_track(self, track):
+        if not self._track_filter:
+            self._track_filter = self._filter(TRACK_FILTERS)
+        return self._track_filter(track)
+
+    def _filter(self, filtermap):
         from functools import partial
         filters = []
         for field, values in self.__query.iteritems():
             filters.extend(partial(filtermap[field], qv) for qv in values)
 
-        def filterfunc(model):
+        def func(model):
             return all(f(model) for f in filters)
-        return filterfunc
+        return func
