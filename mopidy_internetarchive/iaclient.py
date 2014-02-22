@@ -158,7 +158,7 @@ class InternetArchiveClient(object):
             logger.debug('%s took %dms', self.msg, duration)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # pragma: no cover
     import argparse
     import json
     import sys
