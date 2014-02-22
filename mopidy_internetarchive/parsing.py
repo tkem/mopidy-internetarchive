@@ -20,6 +20,8 @@ ISODATE_RE = re.compile(r"""
 (?:\-(\d{2}))?
 """, flags=re.VERBOSE)
 
+REFTITLE_RE = re.compile(r'[/"]')
+
 logger = logging.getLogger(__name__)
 
 
@@ -81,9 +83,8 @@ def parse_title(title, default=None, ref=False):
     if not title or title == 'tmp':
         title = default
     if title and ref:
-        return title.replace('/', '_')
-    else:
-        return title
+        title = REFTITLE_RE.sub('_', title)
+    return title
 
 
 def parse_track(track, default=None):
