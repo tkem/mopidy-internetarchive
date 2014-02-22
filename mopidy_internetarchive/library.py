@@ -11,9 +11,9 @@ from .parsing import *  # noqa
 from .query import Query
 from .uritools import urisplit, uriunsplit
 
-BROWSE_FIELDS = ('identifier', 'title', 'mediatype'),
+BROWSE_FIELDS = ('identifier', 'title')
 
-SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date', 'publicdate')
+SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date')
 
 QUERY_MAP = {
     'any': None,
@@ -218,7 +218,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 QUERY_MAP[k]: query[k] for k in query if k in QUERY_MAP
             }, group='AND'),
             fields=SEARCH_FIELDS,
-            sort=(self.config['sort_order'],),
             rows=self.config['search_limit']
         )
         albums = []
