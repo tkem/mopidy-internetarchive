@@ -22,15 +22,15 @@ def cachedmethod(method):
             key = makekey(args, kwargs)
             try:
                 result = self.cache[key]
-                logger.debug("%r: cache hit: %r", self, key)
+                logger.debug('Cache hit for %r: %r', self, key)
                 return result
             except KeyError:
-                logger.debug("%r: cache miss: %r", self, key)
+                logger.debug('Cache miss for %r: %r', self, key)
                 result = method(self, *args, **kwargs)
                 self.cache[key] = result
                 return result
             except TypeError:
-                logger.warn("%r: cache fail: %s", self, key)
+                logger.warn('Cache fail for %r: %r', self, key)
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -50,7 +50,7 @@ class InternetArchiveClient(object):
 
     @cachedmethod
     def search(self, query, fields=None, sort=None, rows=None, start=None):
-        with self.DebugTimer('Searching for %r' % query):
+        with self.DebugTimer('Searching Internet Archive for %r' % query):
             response = self.session.get(self.search_url, params={
                 'q': query,
                 'fl[]': fields,
@@ -66,7 +66,7 @@ class InternetArchiveClient(object):
     @cachedmethod
     def metadata(self, path):
         url = urljoin(self.metadata_url, path.lstrip('/'))
-        with self.DebugTimer('Loading metadata for %r' % path):
+        with self.DebugTimer('Loading Internet Archive item %r' % path):
             response = self.session.get(url, timeout=self.timeout)
         data = response.json()
 

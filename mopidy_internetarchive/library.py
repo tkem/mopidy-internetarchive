@@ -59,7 +59,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return uriunsplit([self.backend.SCHEME, None, identifier, None, name])
 
     def get_image_url(self, identifier, name):
-        return self.backend.client.geturl(identifier.lstrip('/'), name)
+        return self.backend.client.geturl(identifier, name)
 
     def get_stream_url(self, uri):
         _, _, identifier, _, name = urisplit(uri)
@@ -95,7 +95,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return []
 
     def find_exact(self, query=None, uris=None):
-        logger.debug("internetarchive find %r", query)
         if not query:
             return None
         try:
@@ -105,7 +104,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return None
 
     def search(self, query=None, uris=None):
-        logger.debug("internetarchive search %r", query)
         if not query:
             return None
         try:
@@ -113,6 +111,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
+
+    def refresh(self, uri=None):
+        logger.info('Clearing Internet Archive cache')
+        if self.backend.client.cache:
+            self.backend.client.cache.clear()
+        self.collections.clear()
+        self.tracks.clear()
 
     def _load_bookmarks(self, usernames):
         refs = {}
