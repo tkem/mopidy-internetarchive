@@ -48,6 +48,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def config(self):
         return self.backend.config[self.backend.SCHEME]
 
+    def parse_uri(self, uri):
+        uriparts = urisplit(uri)
+        return (uriparts.userinfo, uriparts.path, uriparts.fragment)
+
     def get_bookmarks_uri(self, username):
         authority = username + '@archive.org'
         return uriunsplit([self.backend.SCHEME, authority, '/', None, None])
@@ -62,8 +66,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return self.backend.client.geturl(identifier, name)
 
     def get_stream_url(self, uri):
-        _, _, identifier, _, name = urisplit(uri)
-        return self.backend.client.geturl(identifier.lstrip('/'), name)
+        _, identifier, filename = self.parse_uri(uri)
+        return self.backend.client.geturl(identifier, filename)
 
     def browse(self, uri):
         try:
@@ -87,7 +91,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         except KeyError:
             logger.debug("internetarchive lookup cache miss %r", uri)
         try:
-            _, _, identifier, _, filename = urisplit(uri)
+            _, identifier, filename = self.parse_uri(uri)
             self.tracks = {t.uri: t for t in self._get_tracks(identifier)}
             return [self.tracks[uri]] if filename else self.tracks.values()
         except Exception as e:
@@ -98,7 +102,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if not query:
             return None
         try:
-            return SearchResult(albums=self._find_albums(Query(query, True)))
+            return self._search(Query(query, True))
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
@@ -107,7 +111,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if not query:
             return None
         try:
-            return SearchResult(albums=self._find_albums(Query(query, False)))
+            return self._search(Query(query, False))
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
@@ -208,7 +212,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             date=parse_date(doc.get('date'))
         )
 
-    def _find_albums(self, query):
+    def _search(self, query):
         result = self.backend.client.search(
             self.search_terms + ' AND ' + self.backend.client.query_string({
                 QUERY_MAP[k]: query[k] for k in query if k in QUERY_MAP
@@ -217,8 +221,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=(self.config['sort_order'],),
             rows=self.config['search_limit']
         )
-        albums = (self._doc_to_album(doc) for doc in result)
-        return [album for album in albums if query.match_album(album)]
+        albums = []
+        for i, doc in enumerate(result):
+            album = self._doc_to_album(doc)
+            if query.match(album):
+                albums.append(album)
+            else:
+                logger.debug('Removing #%d from search result: %r', i, doc)
+        return SearchResult(albums=albums)
 
     def _get_tracks(self, identifier):
         item = self.backend.client.metadata(identifier)
