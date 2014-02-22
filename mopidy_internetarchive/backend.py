@@ -26,14 +26,16 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
         self.config = config
 
         base_url = config[self.SCHEME]['base_url']
+        timeout = config[self.SCHEME]['timeout']
         cache_size = config[self.SCHEME]['cache_size']
         cache_ttl = config[self.SCHEME]['cache_ttl']
-        timeout = config[self.SCHEME]['timeout']
 
+        logger.debug("Internet Archive URL=%s, timeout=%r, cache=%r",
+                     base_url, timeout, (cache_size, cache_ttl))
         if cache_size and cache_ttl:
             cache = LRUCache(maxsize=cache_size, ttl=cache_ttl)
-            self.client = InternetArchiveClient(base_url, timeout, cache)
         else:
-            self.client = InternetArchiveClient(base_url, timeout)
+            cache = None
+        self.client = InternetArchiveClient(base_url, timeout, cache=cache)
         self.library = InternetArchiveLibraryProvider(self)
         self.playback = InternetArchivePlaybackProvider(audio, self)

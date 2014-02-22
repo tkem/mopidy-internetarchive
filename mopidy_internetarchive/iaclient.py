@@ -4,6 +4,7 @@ import collections
 import logging
 import re
 import requests
+import time
 
 from urlparse import urlsplit, urljoin
 
@@ -21,15 +22,15 @@ def cachedmethod(method):
             key = makekey(args, kwargs)
             try:
                 result = self.cache[key]
-                logger.debug("cache hit: %s", key)
+                logger.debug("%r: cache hit: %r", self, key)
                 return result
             except KeyError:
-                logger.debug("cache miss: %s", key)
+                logger.debug("%r: cache miss: %r", self, key)
                 result = method(self, *args, **kwargs)
                 self.cache[key] = result
                 return result
             except TypeError:
-                logger.warn("cache fail: %s", key)
+                logger.warn("%r: cache fail: %s", self, key)
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -49,14 +50,15 @@ class InternetArchiveClient(object):
 
     @cachedmethod
     def search(self, query, fields=None, sort=None, rows=None, start=None):
-        response = self.session.get(self.search_url, params={
-            'q': query,
-            'fl[]': fields,
-            'sort[]': sort,
-            'rows': rows,
-            'start': start,
-            'output': 'json'
-        }, timeout=self.timeout)
+        with self.DebugTimer('Searching for %r' % query):
+            response = self.session.get(self.search_url, params={
+                'q': query,
+                'fl[]': fields,
+                'sort[]': sort,
+                'rows': rows,
+                'start': start,
+                'output': 'json'
+            }, timeout=self.timeout)
         if not response.content:
             raise self.SearchError(urlsplit(response.url).query)
         return self.SearchResult(response.json())
@@ -64,7 +66,8 @@ class InternetArchiveClient(object):
     @cachedmethod
     def metadata(self, path):
         url = urljoin(self.metadata_url, path.lstrip('/'))
-        response = self.session.get(url, timeout=self.timeout)
+        with self.DebugTimer('Loading metadata for %r' % path):
+            response = self.session.get(url, timeout=self.timeout)
         data = response.json()
 
         if not data:
@@ -78,11 +81,12 @@ class InternetArchiveClient(object):
 
     @cachedmethod
     def bookmarks(self, username):
-        url = urljoin(self.bookmarks_url, username) + '?output=json'
-        response = self.session.get(url, timeout=self.timeout)
+        url = urljoin(self.bookmarks_url, username + '?output=json')
+        with self.DebugTimer('Loading bookmarks for %r' % username):
+            response = self.session.get(url, timeout=self.timeout)
         # requests for non-existant users yield text/xml response
         if response.headers['Content-Type'] != 'application/json':
-            raise LookupError('User account %r not found' % username)
+            raise LookupError('Internet Archive user %r not found' % username)
         return response.json()
 
     def geturl(self, identifier, filename=None):
@@ -139,6 +143,19 @@ class InternetArchiveClient(object):
         def __init__(self, query):
             msg = 'Invalid Internet Archive query %r' % query
             super(InternetArchiveClient.SearchError, self).__init__(msg)
+
+    class DebugTimer(object):
+
+        def __init__(self, msg):
+            self.msg = msg
+            self.start = None
+
+        def __enter__(self):
+            self.start = time.time()
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            duration = (time.time() - self.start) * 1000
+            logger.debug('%s took %dms', self.msg, duration)
 
 
 if __name__ == '__main__':
