@@ -2,8 +2,8 @@
 Mopidy-InternetArchive
 ************************************************************************
 
-`Mopidy <http://www.mopidy.com/>`_ extension for playing music and
-audio from the `Internet Archive <http://archive.org>`_.
+Mopidy_ extension for playing music and audio from the `Internet
+Archive <http://archive.org>`_.
 
 
 Installation
@@ -84,36 +84,18 @@ warned before trying any of these::
 Project resources
 ========================================================================
 
-- `Source code <https://github.com/tkem/mopidy-internetarchive>`_
-- `Issue tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
+- `Documentation <http://mopidy-internetarchive.readthedocs.org/en/docs/>`_
+- `Issue Tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
+- `Source Code <https://github.com/tkem/mopidy-internetarchive>`_
+- `Change Log <https://github.com/tkem/mopidy-internetarchive/CHANGELOG.rst>`_
 
 
-Changelog
-========================================================================
+.. image:: https://pypip.in/v/Mopidy-InternetArchive/badge.png
+    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
+    :alt: Latest PyPI version
 
-v0.3.1 (2014-02-21)
-------------------------------------------------------------------------
+.. image:: https://pypip.in/d/Mopidy-InternetArchive/badge.png
+    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
+    :alt: Number of PyPI downloads
 
-- Fix default configuration.
-
-
-v0.3.0 (2014-02-21)
-------------------------------------------------------------------------
-
-- Add bookmark browsing support.
-- Better filtering of search results.
-- Stability and performance improvements.
-
-
-v0.2.0 (2014-01-31)
-------------------------------------------------------------------------
-
-- Add library browsing support.
-- Cache search results and metadata.
-- Properly quote/encode query terms.
-
-
-v0.1.0 (2014-01-24)
-------------------------------------------------------------------------
-
-- Initial release.
+.. _Mopidy: http://www.mopidy.com/
