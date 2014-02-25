@@ -30,7 +30,7 @@ def parse_bitrate(bitrate, default=None):
         return default
     try:
         return int(float(bitrate))
-    except Exception:
+    except:
         logger.warn('Invalid Internet Archive bitrate: %r', bitrate)
         return default
 
@@ -42,7 +42,7 @@ def parse_creator(creator, default=[]):
         if isinstance(creator, basestring):
             creator = [creator]
         return [Artist(name=s.strip()) for s in creator]
-    except Exception:
+    except:
         logger.warn('Invalid Internet Archive creator: %r', creator)
         return default
 
@@ -52,7 +52,7 @@ def parse_date(date, default=None):
         return default
     try:
         return '-'.join(ISODATE_RE.match(date).groups('01'))
-    except Exception:
+    except:
         logger.warn('Invalid Internet Archive date: %r', date)
         return default
 
@@ -62,7 +62,7 @@ def parse_length(length, default=None):
         return default
     try:
         groups = DURATION_RE.match(length).groupdict('0')
-    except Exception:
+    except:
         logger.warn('Invalid Internet Archive length: %r', length)
         return default
     d = datetime.timedelta(**{k: int(v) for k, v in groups.items()})
@@ -74,7 +74,7 @@ def parse_mtime(mtime, default=None):
         return default
     try:
         return int(mtime)
-    except Exception:
+    except:
         logger.warn('Invalid Internet Archive mtime: %r', mtime)
         return default
 
@@ -92,6 +92,6 @@ def parse_track(track, default=None):
         return default
     try:
         return int(track.partition('/')[0])
-    except Exception:
+    except:
         logger.warn('Invalid Internet Archive track no.: %r', track)
         return default
