@@ -1,16 +1,12 @@
 from __future__ import unicode_literals
 
 import collections
-import logging
 
 from mopidy.models import Artist, Album, Track
-
-logger = logging.getLogger(__name__)
 
 QUERY_FIELDS = {
     'uri',
     'track_name',
-    'track_no',
     'album',
     'artist',
     'composer',
@@ -19,65 +15,112 @@ QUERY_FIELDS = {
     'genre',
     'date',
     'comment',
+    'track_no',
     'any'
 }
 
-DEFAULT_FILTERS = dict.fromkeys(QUERY_FIELDS, lambda qv, value: False)
+DEFAULT_FILTERS = dict.fromkeys(QUERY_FIELDS, lambda q, v: False)
 
-TRACK_FILTERS = dict(
-    DEFAULT_FILTERS,
-    uri=lambda qv, track: qv == track.uri,
-    track_name=lambda qv, track: qv == track.name,
-    track_no=lambda qv, track: qv.isdigit() and int(qv) == track.track_no,
-    album=lambda qv, track: track.album and qv == track.album.name,
-    artist=lambda qv, track: any(
-        qv == a.name for a in track.artists
+TRACK_FILTERS = [
+    dict(
+        DEFAULT_FILTERS,
+        uri=lambda q, track: bool(
+            track.uri and q in track.uri.lower()
+        ),
+        track_name=lambda q, track: bool(
+            track.name and q in track.name.lower()
+        ),
+        album=lambda q, track: bool(
+            track.album and track.album.name and q in track.album.name.lower()
+        ),
+        artist=lambda q, track: any(
+            a.name and q in a.name.lower() for a in track.artists
+        ),
+        composer=lambda q, track: any(
+            a.name and q in a.name.lower() for a in track.composers
+        ),
+        performer=lambda q, track: any(
+            a.name and q in a.name.lower() for a in track.performers
+        ),
+        albumartist=lambda q, track: track.album and any(
+            a.name and q in a.name.lower() for a in track.album.artists
+        ),
+        genre=lambda q, track: bool(
+            track.genre and q in track.genre.lower()
+        ),
+        date=lambda q, track: bool(
+            track.date and track.date.startswith(q)
+        ),
+        comment=lambda q, track: bool(
+            track.comment and q in track.comment.lower(),
+        ),
+        track_no=lambda q, track: q.isdigit() and int(q) == track.track_no
     ),
-    composer=lambda qv, track: any(
-        qv == a.name for a in track.composers
+    dict(
+        DEFAULT_FILTERS,
+        uri=lambda q, track: q == track.uri,
+        track_name=lambda q, track: q == track.name,
+        album=lambda q, track: track.album and q == track.album.name,
+        artist=lambda q, track: any(
+            q == a.name for a in track.artists
+        ),
+        composer=lambda q, track: any(
+            q == a.name for a in track.composers
+        ),
+        performer=lambda q, track: any(
+            q == a.name for a in track.performers
+        ),
+        albumartist=lambda q, track: track.album and any(
+            q == a.name for a in track.album.artists
+        ),
+        genre=lambda q, track: q == track.genre,
+        date=lambda q, track: q == track.date,
+        comment=lambda q, track: q == track.comment,
+        track_no=lambda q, track: q.isdigit() and int(q) == track.track_no
+    )
+]
+
+ALBUM_FILTERS = [
+    dict(
+        DEFAULT_FILTERS,
+        uri=lambda q, album: bool(album.uri and q in album.uri.lower()),
+        album=lambda q, album: bool(album.name and q in album.name.lower()),
+        artist=lambda q, album: any(
+            a.name and q in a.name.lower() for a in album.artists
+        ),
+        albumartist=lambda q, album: any(
+            a.name and q in a.name.lower() for a in album.artists
+        ),
+        date=lambda q, album: bool(
+            album.date and album.date.startswith(q)
+        )
     ),
-    performer=lambda qv, track: any(
-        qv == a.name for a in track.performers
+    dict(
+        DEFAULT_FILTERS,
+        uri=lambda q, album: q == album.uri,
+        album=lambda q, album: q == album.name,
+        artist=lambda q, album: any(
+            q == a.name for a in album.artists
+        ),
+        albumartist=lambda q, album: any(
+            q == a.name for a in album.artists
+        ),
+        date=lambda q, album: q == album.date
+    )
+]
+
+ARTIST_FILTERS = [
+    dict(
+        DEFAULT_FILTERS,
+        uri=lambda q, artist: bool(artist.uri and q in artist.uri.lower()),
+        artist=lambda q, artist: bool(artist.name and q in artist.name.lower())
     ),
-    albumartist=lambda qv, track: track.album and any(
-        qv == a.name for a in track.album.artists
-    ),
-    genre=lambda qv, track: qv == track.genre,
-    date=lambda qv, track: qv == track.date,
-    comment=lambda qv, track: qv == track.comment
-)
-
-ALBUM_FILTERS = dict(
-    DEFAULT_FILTERS,
-    uri=lambda qv, album: qv == album.uri,
-    album=lambda qv, album: qv == album.name,
-    artist=lambda qv, album: any(
-        qv == a.name for a in album.artists
-    ),
-    albumartist=lambda qv, album: any(
-        qv == a.name for a in album.artists
-    ),
-    date=lambda qv, album: qv == album.date
-)
-
-ARTIST_FILTERS = dict(
-    DEFAULT_FILTERS,
-    uri=lambda qv, artist: qv == artist.uri,
-    artist=lambda qv, artist: qv == artist.name
-)
-
-
-# setup 'any' filters
-def _any_filter(filtermap):
-    filters = [filtermap[key] for key in filtermap.keys() if key != 'any']
-
-    def any_filter(qv, value):
-        return any(f(qv, value) for f in filters)
-    return any_filter
-
-TRACK_FILTERS['any'] = _any_filter(TRACK_FILTERS)
-ALBUM_FILTERS['any'] = _any_filter(ALBUM_FILTERS)
-ARTIST_FILTERS['any'] = _any_filter(ARTIST_FILTERS)
+    dict(
+        DEFAULT_FILTERS,
+        uri=lambda q, artist: q == artist.uri,
+        artist=lambda q, artist: q == artist.name
+    )
+]
 
 
 class Query(collections.Mapping):
@@ -86,47 +129,32 @@ class Query(collections.Mapping):
     _album_filter = None
     _artist_filter = None
 
-    class QV(unicode):
-        def __new__(cls, value):
-            return super(Query.QV, cls).__new__(cls, value.strip().lower())
-
-        def __eq__(self, other):
-            return other and self in other.lower()
-
-        def __ne__(self, other):
-            return not other or self not in other.lower()
-
-        def __repr__(self):
-            return 'qv' + super(Query.QV, self).__repr__()
-
-        __hash__ = None
-
-    def __init__(self, query, exact=False):
-        if not query:
+    def __init__(self, terms, exact=False):
+        if not terms:
             raise LookupError('Empty query not allowed')
-        self.__query = {}
-        for field, values in query.iteritems():
+        self.terms = {}
+        self.exact = exact
+
+        for field, values in terms.iteritems():
             if field not in QUERY_FIELDS:
-                raise LookupError('Invalid query field "%s"' % field)
-            if not values:
-                raise LookupError('Missing query value for "%s"' % field)
+                raise LookupError('Invalid query field %r' % field)
             if isinstance(values, basestring):
                 values = [values]
-            if not all(values):
-                raise LookupError('Missing query value for "%s"' % field)
+            if not (values and all(values)):
+                raise LookupError('Missing query value for %r' % field)
             if exact:
-                self.__query[field] = values
+                self.terms[field] = values
             else:
-                self.__query[field] = [self.QV(value) for value in values]
+                self.terms[field] = [v.lower() for v in values]
 
     def __getitem__(self, key):
-        return self.__query.__getitem__(key)
+        return self.terms[key]
 
     def __iter__(self):
-        return self.__query.__iter__()
+        return iter(self.terms)
 
     def __len__(self):
-        return self.__query.__len__()
+        return len(self.terms)
 
     def match(self, model):
         if isinstance(model, Track):
@@ -136,29 +164,43 @@ class Query(collections.Mapping):
         elif isinstance(model, Artist):
             return self.match_artist(model)
         else:
-            raise TypeError('Invalid type: %s' % type(model))
+            raise TypeError('Invalid model type: %s' % type(model))
 
     def match_artist(self, artist):
         if not self._artist_filter:
-            self._artist_filter = self._filter(ARTIST_FILTERS)
+            self._artist_filter = self._filter(ARTIST_FILTERS[self.exact])
         return self._artist_filter(artist)
 
     def match_album(self, album):
         if not self._album_filter:
-            self._album_filter = self._filter(ALBUM_FILTERS)
+            self._album_filter = self._filter(ALBUM_FILTERS[self.exact])
         return self._album_filter(album)
 
     def match_track(self, track):
         if not self._track_filter:
-            self._track_filter = self._filter(TRACK_FILTERS)
+            self._track_filter = self._filter(TRACK_FILTERS[self.exact])
         return self._track_filter(track)
 
     def _filter(self, filtermap):
         from functools import partial
         filters = []
-        for field, values in self.__query.iteritems():
-            filters.extend(partial(filtermap[field], qv) for qv in values)
+        for field, values in self.terms.iteritems():
+            filters.extend(partial(filtermap[field], v) for v in values)
 
         def func(model):
             return all(f(model) for f in filters)
         return func
+
+
+# setup 'any' filters
+def _any_filter(filtermap):
+    filters = filtermap.values()
+
+    def any_filter(q, v):
+        return any(f(q, v) for f in filters)
+    return any_filter
+
+for i in (False, True):
+    TRACK_FILTERS[i]['any'] = _any_filter(TRACK_FILTERS[i])
+    ALBUM_FILTERS[i]['any'] = _any_filter(ALBUM_FILTERS[i])
+    ARTIST_FILTERS[i]['any'] = _any_filter(ARTIST_FILTERS[i])

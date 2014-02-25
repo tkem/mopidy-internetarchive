@@ -31,6 +31,7 @@ class QueryTest(unittest.TestCase):
     def test_create_query(self):
         for exact in (True, False):
             q1 = Query(dict(any='foo'), exact)
+            self.assertEqual(q1.exact == exact)
             self.assertEqual(len(q1), 1)
             self.assertItemsEqual(q1, ['any'])
             self.assertEqual(len(q1['any']), 1)
@@ -38,6 +39,7 @@ class QueryTest(unittest.TestCase):
             self.assertNotEqual(q1['any'][0], 'bar')
 
             q2 = Query(dict(any=['foo', 'bar'], artist='x'), exact)
+            self.assertEqual(q2.exact == exact)
             self.assertEqual(len(q2), 2)
             self.assertItemsEqual(q2, ['any', 'artist'])
             self.assertEqual(len(q2['any']), 2)
@@ -45,11 +47,6 @@ class QueryTest(unittest.TestCase):
             self.assertEqual(q2['any'][0], 'foo')
             self.assertEqual(q2['any'][1], 'bar')
             self.assertEqual(q2['artist'][0], 'x')
-
-        q1 = Query(dict(any='foo'), False)
-        q2 = Query(dict(any='foo'), True)
-        # so we can distinguish them in logs, etc.
-        self.assertNotEqual(repr(q1['any'][0]), repr(q2['any'][0]))
 
     def test_query_errors(self):
         for exact in (True, False):
