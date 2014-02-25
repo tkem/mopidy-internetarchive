@@ -1,6 +1,14 @@
 Mopidy-InternetArchive Change Log
 ========================================================================
 
+v0.4.0 (2014-02-25)
+------------------------------------------------------------------------
+
+- Various performance and stability improvements.
+- Option to exclude specific collections from searching/browsing.
+- Add image URLs to albums.
+
+
 v0.3.1 (2014-02-21)
 ------------------------------------------------------------------------
 

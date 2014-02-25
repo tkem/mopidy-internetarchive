@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 from mopidy import config, ext
 
-__version__ = '0.3.1'
+__version__ = '0.4.0'
 
 SORT_ORDER_CHOICES = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
     'avg_rating',

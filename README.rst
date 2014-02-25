@@ -22,7 +22,7 @@ Configuration
 ========================================================================
 
 Configuration items are still subject to change at this point, so be
-warned before trying any of these::
+warned if trying any of these::
 
     [internetarchive]
     enabled = true
@@ -48,13 +48,16 @@ warned before trying any of these::
     # media types for searching/browsing
     mediatypes = audio, etree
 
+    # audio file formats, in order of preference
+    formats = VBR MP3, MP3
+
+    # collections to exclude from searching/browsing
+    excludes =
+
     # user names for bookmark browsing
     bookmarks =
 
-    # streaming file formats, in order of preference
-    formats = VBR MP3, MP3
-
-    # query sort order: <fieldname> (asc|desc), where <fieldname>
+    # sort order for browsing: <fieldname> (asc|desc), where <fieldname>
     # is one of: avg_rating, creatorSorter, date, downloads, month,
     # publicdate, stars, titleSorter, week, year
     sort_order = downloads desc
@@ -77,14 +80,14 @@ warned before trying any of these::
     # cache time-to-live in seconds
     cache_ttl = 86400
 
-    # request timeout in seconds
-    timeout = 10
+    # optional http request timeout in seconds
+    timeout =
 
 
 Project resources
 ========================================================================
 
-- `Documentation <http://mopidy-internetarchive.readthedocs.org/en/docs/>`_
+.. TODO - `Documentation <http://mopidy-internetarchive.readthedocs.org/en/docs/>`_
 - `Issue Tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
 - `Source Code <https://github.com/tkem/mopidy-internetarchive>`_
 - `Change Log <https://github.com/tkem/mopidy-internetarchive/CHANGELOG.rst>`_
