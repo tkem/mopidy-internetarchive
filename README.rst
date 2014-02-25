@@ -90,7 +90,7 @@ Project resources
 .. TODO - `Documentation <http://mopidy-internetarchive.readthedocs.org/en/docs/>`_
 - `Issue Tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
 - `Source Code <https://github.com/tkem/mopidy-internetarchive>`_
-- `Change Log <https://github.com/tkem/mopidy-internetarchive/CHANGELOG.rst>`_
+- `Change Log <https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGELOG.rst>`_
 
 
 .. image:: https://pypip.in/v/Mopidy-InternetArchive/badge.png
