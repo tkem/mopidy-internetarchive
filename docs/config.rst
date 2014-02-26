@@ -1,16 +1,35 @@
+.. _config:
+
 Configuration
 ========================================================================
 
-Configuration items are still subject to change at this point, so be
-warned if trying any of these:
+This extension has a number of configuration values that can be
+tweaked.  However, the default configuration contains everything to
+get up and running, and will usually require only a few modifications
+to match personal needs.
+
+
+Default Configuration
+------------------------------------------------------------------------
+
+.. literalinclude:: ../mopidy_internetarchive/ext.conf
+   :language: ini
+
+
+.. _configuration values:
+
+Configuration Values
+------------------------------------------------------------------------
 
 .. confval:: internetarchive/base_url
 
-   Base URL to access the `Internet Archive`_.
+   Base URL to access the Internet Archive.
 
 .. confval:: internetarchive/collections
 
    Collections for searching/browsing.
+
+   This
 
 .. confval:: internetarchive/mediatypes
 
@@ -19,6 +38,14 @@ warned if trying any of these:
 .. confval:: internetarchive/formats
 
    Audio file formats, in order of preference.
+
+   The :confval:`formats` entry contains a list of Internet Archive
+   media formats.  By default, only streaming formats are requested.
+   Note that the Internet Archive also contains a large number of
+   high-quality media files in FLAC format, but for your bandwidth's
+   sake (and that of the Archive), it is recommended that you stick to
+   the recommended streaming formats.  You can download FLAC files
+   from the Archive and play them locally, of course.
 
 .. confval:: internetarchive/excludes
 
@@ -48,13 +75,19 @@ warned if trying any of these:
 
    Maximum number of search results.
 
+   This is used to limit the number of items returned for a search
+   query.
+
 .. confval:: internetarchive/browse_limit
 
    Maximum number of browse results.
 
+   This is used to limit the number of items returned for a browse
+   query.
+
 .. confval:: internetarchive/browse_label
 
-   Top-level directory name for browsing.
+   The top-level directory name for browsing the Internet Archive.
 
 .. confval:: internetarchive/bookmarks_label
 
@@ -72,11 +105,8 @@ warned if trying any of these:
 
    Optional http request timeout in seconds.
 
-
-Default Configuration
-------------------------------------------------------------------------
-
-.. literalinclude:: ../mopidy_internetarchive/ext.conf
-   :language: ini
-
-.. _Internet Archive: http://archive.org
+   This setting can be used to abort HTTP requests to the Internet
+   Archive after a given timeout.  Since the best value for this
+   highly depends on your configuration, network connection, and
+   external factors such as the Internet Archive's current load, this
+   is left blank in default configuration.
