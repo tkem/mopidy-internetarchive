@@ -1,6 +1,4 @@
-.. _config:
-
-Configuration
+Configuration Guide
 ========================================================================
 
 This extension has a number of configuration values that can be
@@ -39,37 +37,17 @@ Configuration Values
 
    Audio file formats, in order of preference.
 
-   The :confval:`formats` entry contains a list of Internet Archive
-   media formats.  By default, only streaming formats are requested.
-   Note that the Internet Archive also contains a large number of
-   high-quality media files in FLAC format, but for your bandwidth's
-   sake (and that of the Archive), it is recommended that you stick to
-   the recommended streaming formats.  You can download FLAC files
-   from the Archive and play them locally, of course.
+   Thid entry contains a list of Internet Archive media formats.  By
+   default, only streaming formats are requested.  Note that the
+   Internet Archive also contains a large number of high-quality media
+   files in FLAC_ format, but for sake of bandwidth (both your's and
+   the Archive's), it is recommended that you stick to the recommended
+   streaming formats.  You can download FLAC files from the Archive
+   and play them locally, of course.
 
 .. confval:: internetarchive/excludes
 
    Collections to exclude from searching/browsing.
-
-.. confval:: internetarchive/bookmarks
-
-   User names for bookmark browsing.
-
-.. confval:: internetarchive/sort_order
-
-   Sort order for browsing: ``<fieldname> (asc|desc)``, where
-   ``<fieldname>`` is one of:
-
-   - avg_rating
-   - creatorSorter
-   - date
-   - downloads
-   - month
-   - publicdate
-   - stars
-   - titleSorter
-   - week
-   - year
 
 .. confval:: internetarchive/search_limit
 
@@ -78,6 +56,10 @@ Configuration Values
    This is used to limit the number of items returned for a search
    query.
 
+.. confval:: internetarchive/search_order
+
+   Sort order for searching.
+
 .. confval:: internetarchive/browse_limit
 
    Maximum number of browse results.
@@ -85,9 +67,17 @@ Configuration Values
    This is used to limit the number of items returned for a browse
    query.
 
+.. confval:: internetarchive/browse_order
+
+   Sort order for browsing.
+
 .. confval:: internetarchive/browse_label
 
    The top-level directory name for browsing the Internet Archive.
+
+.. confval:: internetarchive/bookmarks
+
+   User names for bookmark browsing.
 
 .. confval:: internetarchive/bookmarks_label
 
@@ -110,3 +100,23 @@ Configuration Values
    highly depends on your configuration, network connection, and
    external factors such as the Internet Archive's current load, this
    is left blank in default configuration.
+
+
+Sort Order Fields
+------------------------------------------------------------------------
+
+Sort order for browsing: ``<fieldname> (asc|desc)``, where
+``<fieldname>`` is one of:
+
+   - avg_rating
+   - creatorSorter
+   - date
+   - downloads
+   - month
+   - publicdate
+   - stars
+   - titleSorter
+   - week
+   - year
+
+.. _FLAC: http://en.wikipedia.org/wiki/FLAC

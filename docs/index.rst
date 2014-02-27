@@ -15,7 +15,7 @@ recordings of the `Live Music Archive`_.
 .. toctree::
    :maxdepth: 2
 
-   intro
+   user
    config
 
 

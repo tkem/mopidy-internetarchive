@@ -1,5 +1,8 @@
-The Internet Archive Metdata Model
+User Guide
 ========================================================================
+
+About the Internet Archive Metdata Model
+------------------------------------------------------------------------
 
 .. note::
 
