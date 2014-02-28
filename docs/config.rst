@@ -1,20 +1,13 @@
-Configuration Guide
+Configuration
 ========================================================================
 
 This extension has a number of configuration values that can be
-tweaked.  However, the default configuration contains everything to
-get up and running, and will usually require only a few modifications
-to match personal needs.
+tweaked.  However, the :ref:`default configuration <defconf>` contains
+everything to get up and running, and will usually require only a few
+modifications to match personal needs.
 
 
-Default Configuration
-------------------------------------------------------------------------
-
-.. literalinclude:: ../mopidy_internetarchive/ext.conf
-   :language: ini
-
-
-.. _configuration values:
+.. _confvals:
 
 Configuration Values
 ------------------------------------------------------------------------
@@ -27,8 +20,6 @@ Configuration Values
 
    Collections for searching/browsing.
 
-   This
-
 .. confval:: internetarchive/mediatypes
 
    Media types for searching/browsing.
@@ -37,7 +28,7 @@ Configuration Values
 
    Audio file formats, in order of preference.
 
-   Thid entry contains a list of Internet Archive media formats.  By
+   This entry contains a list of Internet Archive media formats.  By
    default, only streaming formats are requested.  Note that the
    Internet Archive also contains a large number of high-quality media
    files in FLAC_ format, but for sake of bandwidth (both your's and
@@ -58,7 +49,7 @@ Configuration Values
 
 .. confval:: internetarchive/search_order
 
-   Sort order for searching.
+   Sort order for searching.  See `Sort Order Fields`_.
 
 .. confval:: internetarchive/browse_limit
 
@@ -69,7 +60,7 @@ Configuration Values
 
 .. confval:: internetarchive/browse_order
 
-   Sort order for browsing.
+   Sort order for browsing.  See `Sort Order Fields`_.
 
 .. confval:: internetarchive/browse_label
 
@@ -103,9 +94,9 @@ Configuration Values
 
 
 Sort Order Fields
-------------------------------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Sort order for browsing: ``<fieldname> (asc|desc)``, where
+Sort order for searching/browsing: ``<fieldname> (asc|desc)``, where
 ``<fieldname>`` is one of:
 
    - avg_rating
@@ -118,5 +109,18 @@ Sort order for browsing: ``<fieldname> (asc|desc)``, where
    - titleSorter
    - week
    - year
+
+
+.. _defconf:
+
+Default Configuration
+------------------------------------------------------------------------
+
+For reference, this is the default configuration shipped with
+Mopidy-InternetArchive release |release|:
+
+.. literalinclude:: ../mopidy_internetarchive/ext.conf
+   :language: ini
+
 
 .. _FLAC: http://en.wikipedia.org/wiki/FLAC
