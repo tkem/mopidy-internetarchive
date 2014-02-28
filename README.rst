@@ -45,7 +45,7 @@ Licensed under the `Apache License, Version 2.0`_.
 .. _Mopidy: http://www.mopidy.com/
 .. _Internet Archive: http://archive.org
 .. _releases: https://github.com/tkem/mopidy-internetarchive/releases
-.. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/docs/
+.. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/latest/
 .. _Issue Tracker: https://github.com/tkem/mopidy-internetarchive/issues/
 .. _Source Code: https://github.com/tkem/mopidy-internetarchive
 .. _Change Log: https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGELOG.rst
