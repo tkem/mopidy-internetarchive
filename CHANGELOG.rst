@@ -1,6 +1,14 @@
 Mopidy-InternetArchive Change Log
 ========================================================================
 
+v0.5.0 (2014-02-28)
+------------------------------------------------------------------------
+
+- Update README with link to documentation.
+- New config values: search_order, browse_order.
+- Allow empty queries for searching.
+
+
 v0.4.0 (2014-02-25)
 ------------------------------------------------------------------------
 
