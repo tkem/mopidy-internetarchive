@@ -17,7 +17,7 @@ You can also download and install Debian/Ubuntu packages for
 Mopidy-InternetArchive releases_.
 
 
-Project resources
+Project Resources
 ------------------------------------------------------------------------
 
 - `Documentation`_
