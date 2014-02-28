@@ -3,14 +3,19 @@ Configuration
 
 This extension has a number of configuration values that can be
 tweaked.  However, the :ref:`default configuration <defconf>` contains
-everything to get up and running, and will usually require only a few
-modifications to match personal needs.
+everything to get you up and running, and will usually require only a
+few modifications to match personal needs.
 
 
 .. _confvals:
 
 Configuration Values
 ------------------------------------------------------------------------
+
+.. note::
+
+   Configuration values are still subject to change at this point, so
+   be warned before trying any of these.
 
 .. confval:: internetarchive/base_url
 
