@@ -8,7 +8,7 @@ audio from the `Internet Archive`_.
 Installation
 ------------------------------------------------------------------------
 
-As every Mopidy extension, Mopidy-InternetArchive can be installed
+Like other Mopidy extensions, Mopidy-InternetArchive can be installed
 using pip by running::
 
     pip install Mopidy-InternetArchive
