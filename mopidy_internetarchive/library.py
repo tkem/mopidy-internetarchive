@@ -34,7 +34,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             uri=uriunsplit([backend.SCHEME, None, '/', None, None]),
             name=self.config['browse_label']
         )
-        self.search_terms = self.backend.client.query_string({
+        self.search_query = self.backend.client.query_string({
             'collection': self.config['collections'],
             '-collection': self.config['excludes'],
             'mediatype':  self.config['mediatypes'],
@@ -49,11 +49,11 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return self.backend.config[self.backend.SCHEME]
 
     def parse_uri(self, uri):
-        uriparts = urisplit(uri)
-        return (uriparts.userinfo, uriparts.path, uriparts.fragment)
+        parts = urisplit(uri)
+        return (parts.userinfo, parts.path, parts.fragment)
 
     def get_bookmarks_uri(self, username):
-        authority = username + '@archive.org'
+        authority = '%s@archive.org' % username
         return uriunsplit([self.backend.SCHEME, authority, '/', None, None])
 
     def get_item_uri(self, identifier):
@@ -172,7 +172,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 'format': self.config['formats'],
             }, group='OR'),
             fields=BROWSE_FIELDS,
-            sort=(self.config['sort_order'],),
+            sort=(self.config['browse_order'],),
             rows=self.config['browse_limit']
         )
         return [self._doc_to_ref(doc) for doc in result]
@@ -214,10 +214,11 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def _search(self, query):
         result = self.backend.client.search(
-            self.search_terms + ' AND ' + self.backend.client.query_string({
+            self.search_query + ' ' + self.backend.client.query_string({
                 QUERY_MAP[k]: query[k] for k in query if k in QUERY_MAP
             }, group='AND'),
             fields=SEARCH_FIELDS,
+            sort=(self.config['search_order'],),
             rows=self.config['search_limit']
         )
         albums = []

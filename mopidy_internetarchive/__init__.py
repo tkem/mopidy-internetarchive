@@ -4,7 +4,7 @@ from mopidy import config, ext
 
 __version__ = '0.4.0'
 
-SORT_ORDER_CHOICES = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
+SORT_FIELDS = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
     'avg_rating',
     'creatorSorter'
     'date',
@@ -36,15 +36,22 @@ class Extension(ext.Extension):
         schema['mediatypes'] = config.List()
         schema['formats'] = config.List()
         schema['excludes'] = config.List(optional=True)
-        schema['bookmarks'] = config.List(optional=True)
-        schema['sort_order'] = config.String(choices=SORT_ORDER_CHOICES)
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
-        schema['browse_limit'] = config.Integer(minimum=1, optional=True)
+        schema['search_order'] = config.String(choices=SORT_FIELDS,
+                                               optional=True)
         schema['browse_label'] = config.String()
+        schema['browse_limit'] = config.Integer(minimum=1, optional=True)
+        schema['browse_order'] = config.String(choices=SORT_FIELDS,
+                                               optional=True)
+        schema['bookmarks'] = config.List(optional=True)
         schema['bookmarks_label'] = config.String()
         schema['cache_size'] = config.Integer(minimum=1)
         schema['cache_ttl'] = config.Integer(minimum=1)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
+
+        # no longer used
+        schema['sort_order'] = config.Deprecated()
+
         return schema
 
     def setup(self, registry):
