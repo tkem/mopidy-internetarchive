@@ -99,19 +99,15 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return []
 
     def find_exact(self, query=None, uris=None):
-        if not query:
-            return None
         try:
-            return self._search(Query(query, True))
+            return self._search(Query(query, True) if query else None)
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
 
     def search(self, query=None, uris=None):
-        if not query:
-            return None
         try:
-            return self._search(Query(query, False))
+            return self._search(Query(query, False) if query else None)
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
@@ -213,10 +209,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         )
 
     def _search(self, query):
-        result = self.backend.client.search(
-            self.search_query + ' ' + self.backend.client.query_string({
+        if query:
+            qs = self.search_query + ' ' + self.backend.client.query_string({
                 QUERY_MAP[k]: query[k] for k in query if k in QUERY_MAP
-            }, group='AND'),
+            })
+        else:
+            qs = self.search_query
+        result = self.backend.client.search(
+            qs,
             fields=SEARCH_FIELDS,
             sort=(self.config['search_order'],),
             rows=self.config['search_limit']
@@ -224,7 +224,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         albums = []
         for i, doc in enumerate(result):
             album = self._doc_to_album(doc)
-            if query.match(album):
+            if not query or query.match(album):
                 albums.append(album)
             else:
                 logger.debug('Removing #%d from search result: %r', i, doc)
