@@ -13,8 +13,12 @@ using pip by running::
 
     pip install Mopidy-InternetArchive
 
-You can also download and install Debian/Ubuntu packages for
-Mopidy-InternetArchive releases_.
+You can also install Debian/Ubuntu packages from the `APT repository`_::
+
+    wget -q -O - http://apt.kemmer.co.at/tkem.gpg | sudo apt-key add -
+    sudo wget -q -O /etc/apt/sources.list.d/tkem.list http://apt.kemmer.co.at/tkem.list
+    sudo apt-get update
+    sudo apt-get install mopidy-internetarchive
 
 
 Project Resources
@@ -44,7 +48,7 @@ Licensed under the `Apache License, Version 2.0`_.
 
 .. _Mopidy: http://www.mopidy.com/
 .. _Internet Archive: http://archive.org
-.. _releases: https://github.com/tkem/mopidy-internetarchive/releases
+.. _APT repository: http://apt.kemmer.co.at/
 .. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/latest/
 .. _Issue Tracker: https://github.com/tkem/mopidy-internetarchive/issues/
 .. _Source Code: https://github.com/tkem/mopidy-internetarchive
