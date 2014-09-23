@@ -4,7 +4,7 @@ Configuration
 This extension has a number of configuration values that can be
 tweaked.  However, the :ref:`default configuration <defconf>` contains
 everything to get you up and running, and will usually require only a
-few modifications to match personal needs.
+few modifications to match personal preferences.
 
 
 .. _confvals:
@@ -12,108 +12,123 @@ few modifications to match personal needs.
 Configuration Values
 ------------------------------------------------------------------------
 
-.. note::
-
-   Configuration values are still subject to change at this point, so
-   be warned before trying any of these.
-
 .. confval:: internetarchive/base_url
 
    Base URL to access the Internet Archive.
 
+.. confval:: internetarchive/username
+
+   Your Internet Archive user name, needed to provide your bookmarks
+   as a playlist in Mopidy.
+
 .. confval:: internetarchive/collections
 
-   Collections for searching/browsing.
+   A list of collection identifiers to show as top-level directories
+   when browsing.
 
-.. confval:: internetarchive/mediatypes
+.. confval:: internetarchive/audio_formats
 
-   Media types for searching/browsing.
+   A list of audio file formats, in order of preference.
 
-.. confval:: internetarchive/formats
+   This entry contains a list of `Internet Archive file formats`_.  By
+   default, only audio formats suitable for streaming are requested.
+   Note that the Internet Archive also contains a large number of
+   high-quality media files in FLAC_ and other lossless formats, but
+   for sake of bandwidth (both your's and the Archive's), it is
+   recommended that you stick to lossy audio formats for streaming
+   through Mopidy.
 
-   Audio file formats, in order of preference.
+.. confval:: internetarchive/image_formats
 
-   This entry contains a list of Internet Archive media formats.  By
-   default, only streaming formats are requested.  Note that the
-   Internet Archive also contains a large number of high-quality media
-   files in FLAC_ format, but for sake of bandwidth (both your's and
-   the Archive's), it is recommended that you stick to the recommended
-   streaming formats.  You can download FLAC files from the Archive
-   and play them locally, of course.
+   A list of image file formats, in order of preference.
 
-.. confval:: internetarchive/excludes
-
-   Collections to exclude from searching/browsing.
-
-.. confval:: internetarchive/search_limit
-
-   Maximum number of search results.
-
-   This is used to limit the number of items returned for a search
-   query.
-
-.. confval:: internetarchive/search_order
-
-   Sort order for searching.  See `Sort Order Fields`_.
+   This entry contains a list of `Internet Archive file formats`_ to
+   be considered when providing images for Internet Archive items.
+   Note that some Mopidy clients, especially MPD clients, will ignore
+   album art provided by Mopidy-InternetArchive or other Mopidy
+   extensions.
 
 .. confval:: internetarchive/browse_limit
 
-   Maximum number of browse results.
+   The maximum number of browse results.
 
-   This is used to limit the number of items returned for a browse
-   query.
+   This is used to limit the number of items returned when browsing
+   the Internet Archive.
 
 .. confval:: internetarchive/browse_order
 
-   Sort order for browsing.  See `Sort Order Fields`_.
+   The :ref:`sort order<sortorder>` used when browsing the Internet
+   Archive.
 
-.. confval:: internetarchive/browse_label
+.. confval:: internetarchive/search_limit
 
-   The top-level directory name for browsing the Internet Archive.
+   The maximum number of search results.
 
-.. confval:: internetarchive/bookmarks
+   This is used to limit the number of items returned when searching
+   the Internet Archive.
 
-   User names for bookmark browsing.
+.. confval:: internetarchive/search_order
 
-.. confval:: internetarchive/bookmarks_label
+   The :ref:`sort order<sortorder>` used when searching the Internet
+   Archive.
 
-   Bookmark directory names for browsing; {0} is user name
+.. _exclude:
+
+.. confval:: internetarchive/exclude_collections
+
+   A list of collection identifiers to exclude when searching or
+   browsing.
+
+.. confval:: internetarchive/exclude_mediatypes
+
+   A list of Internet Archive media types to exclude when searching or
+   browsing.
 
 .. confval:: internetarchive/cache_size
 
-   Number of items and query results to cache.
+   The number of items and search results to cache.
 
 .. confval:: internetarchive/cache_ttl
 
-   Cache time-to-live in seconds.
+   The cache time-to-live in seconds.
 
 .. confval:: internetarchive/timeout
 
-   Optional http request timeout in seconds.
+   The request timeout in seconds for HTTP requests to the Internet
+   Archive.
 
-   This setting can be used to abort HTTP requests to the Internet
-   Archive after a given timeout.  Since the best value for this
-   highly depends on your configuration, network connection, and
-   external factors such as the Internet Archive's current load, this
-   is left blank in default configuration.
 
+.. _sortorder:
 
 Sort Order Fields
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------------------------------------------------
 
-Sort order for searching/browsing: ``<fieldname> (asc|desc)``, where
-``<fieldname>`` is one of:
+The sort order for searching and browsing is given as ``<fieldname>
+(asc|desc)``, where ``<fieldname>`` is one of:
 
-   - avg_rating
-   - creatorSorter
-   - date
-   - downloads
-   - month
-   - publicdate
-   - stars
-   - titleSorter
-   - week
-   - year
+  - addeddate
+  - avg_rating
+  - call_number
+  - createdate
+  - creatorSorter
+  - date
+  - downloads
+  - foldoutcount
+  - headerImage
+  - identifier
+  - imagecount
+  - indexdate
+  - languageSorter
+  - licenseurl
+  - month
+  - nav_order
+  - num_reviews
+  - publicdate
+  - reviewdate
+  - stars
+  - titleSorter
+  - week
+  - year
 
 
 .. _defconf:
@@ -129,3 +144,4 @@ Mopidy-InternetArchive release |release|:
 
 
 .. _FLAC: http://en.wikipedia.org/wiki/FLAC
+.. _Internet Archive file formats: https://archive.org/help/derivatives.php

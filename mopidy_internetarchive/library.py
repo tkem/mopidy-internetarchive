@@ -1,21 +1,24 @@
 from __future__ import unicode_literals
 
+import cachetools
+import collections
+import itertools
 import logging
-
-from collections import defaultdict
+import operator
+import re
 
 from mopidy import backend
-from mopidy.models import Album, Track, SearchResult, Ref
+from mopidy.models import Album, Artist, Track, SearchResult, Ref
+from uritools import uricompose, urisplit
 
+from . import Extension
 from .parsing import *  # noqa
-from .query import Query
-from .uritools import urisplit, uriunsplit
 
-BROWSE_FIELDS = ('identifier', 'title')
+_URI_PREFIX = Extension.ext_name + ':'
 
-SEARCH_FIELDS = ('identifier', 'title', 'creator', 'date')
+_QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
-QUERY_MAP = {
+_QUERY_MAPPING = {
     'any': None,
     'album': 'title',
     'artist': 'creator',
@@ -26,251 +29,246 @@ QUERY_MAP = {
 logger = logging.getLogger(__name__)
 
 
+def _cache(cache_size=None, cache_ttl=None, **kwargs):
+    """Cache factory"""
+    if cache_size is None:
+        return dict()  # for testing/debugging
+    elif cache_ttl is None:
+        return cachetools.LRUCache(cache_size)
+    else:
+        return cachetools.TTLCache(cache_size, cache_ttl)
+
+
+def _ref(metadata):
+    id = metadata['identifier']
+    uri = _URI_PREFIX + id
+    name = metadata.get('title', id)
+    return Ref.directory(uri=uri, name=name)
+
+
+def _artists(metadata, default=[]):
+    creator = metadata.get('creator')
+    if not creator:
+        return default
+    if isinstance(creator, basestring):
+        creator = [creator]
+    return [Artist(name=name) for name in creator]
+
+
+def _album(metadata, images=[]):
+    id = metadata['identifier']
+    uri = _URI_PREFIX + id
+    name = metadata.get('title', id)
+    artists = _artists(metadata)
+    date = parse_date(metadata.get('date'))
+    return Album(uri=uri, name=name, artists=artists, date=date, images=images)
+
+
+def _track(identifier, file, album):
+    filename = file['name']
+    uri = _URI_PREFIX + identifier + '#' + filename
+    name = file.get('title', filename)
+    return Track(
+        uri=uri,
+        name=name,
+        album=album,
+        artists=_artists(file, album.artists),
+        track_no=parse_track_no(file.get('track')),
+        date=parse_date(file.get('date'), album.date),
+        length=parse_length(file.get('length')),
+        bitrate=parse_bitrate(file.get('bitrate')),
+        last_modified=parse_mtime(file.get('mtime'))
+    )
+
+
+def _quote(term):
+    term = _QUERY_CHAR_RE.sub(r'\\\1', term)
+    # only quote if term contains whitespace, since date:"2014-01-01"
+    # will raise an error
+    if any(c.isspace() for c in term):
+        term = '"' + term + '"'
+    return term
+
+
+def _query(*args, **kwargs):
+    terms = []
+    for field, value in itertools.chain(args, kwargs.items()):
+        if not value:
+            continue
+        elif isinstance(value, basestring):
+            values = [_quote(value)]
+        else:
+            values = [_quote(v) for v in value]
+        if len(values) == 1:
+            term = values[0]
+        else:
+            term = '(%s)' % ' OR '.join(values)
+        terms.append(field + ':' + term if field else term)
+    return ' AND '.join(terms)
+
+
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
-    def __init__(self, backend):
+    root_directory = Ref.directory(
+        uri=_URI_PREFIX,
+        name='Internet Archive'
+    )
+
+    def __init__(self, config, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
-        self.root_directory = Ref.directory(
-            uri=uriunsplit([backend.SCHEME, None, '/', None, None]),
-            name=self.config['browse_label']
-        )
-        self.search_query = self.backend.client.query_string({
-            'collection': self.config['collections'],
-            '-collection': self.config['excludes'],
-            'mediatype':  self.config['mediatypes'],
-            'format': self.config['formats'],
-        }, group='OR')
-        self.bookmarks = self._load_bookmarks(self.config['bookmarks'])
-        self.collections = self._load_collections(self.config['collections'])
-        self.tracks = {}  # track cache for faster lookup
-
-    @property
-    def config(self):
-        return self.backend.config[self.backend.SCHEME]
-
-    def parse_uri(self, uri):
-        parts = urisplit(uri)
-        return (parts.userinfo, parts.path, parts.fragment)
-
-    def get_bookmarks_uri(self, username):
-        authority = '%s@archive.org' % username
-        return uriunsplit([self.backend.SCHEME, authority, '/', None, None])
-
-    def get_item_uri(self, identifier):
-        return uriunsplit([self.backend.SCHEME, None, identifier, None, None])
-
-    def get_file_uri(self, identifier, name):
-        return uriunsplit([self.backend.SCHEME, None, identifier, None, name])
-
-    def get_image_url(self, identifier, name):
-        return self.backend.client.geturl(identifier, name)
-
-    def get_stream_url(self, uri):
-        _, identifier, filename = self.parse_uri(uri)
-        return self.backend.client.geturl(identifier, filename)
-
-    def browse(self, uri):
-        try:
-            if not uri:
-                return [self.root_directory]
-            elif uri == self.root_directory.uri:
-                return self._browse_root()
-            elif uri in self.bookmarks:
-                return self._browse_bookmarks(urisplit(uri).userinfo)
-            elif uri in self.collections:
-                return self._browse_collection(urisplit(uri).path)
-            else:
-                return self._browse_item(urisplit(uri).path)
-        except Exception as e:
-            logger.error('Error browsing %r: %s', uri, e)
-            return []
+        self._config = iaconfig = config[Extension.ext_name]
+        self._search_filter = {
+            'format': iaconfig['audio_formats'],
+            '-collection': iaconfig['exclude_collections'],
+            '-mediatype': iaconfig['exclude_mediatypes']
+        }
+        self._cache = _cache(**iaconfig)
+        self._tracks = {}  # track cache for faster lookup
 
     def lookup(self, uri):
         try:
-            return [self.tracks[uri]]
+            return [self._tracks[uri]]
         except KeyError:
-            logger.debug("internetarchive lookup cache miss %r", uri)
+            logger.debug("track lookup cache miss %r", uri)
         try:
-            _, identifier, filename = self.parse_uri(uri)
-            self.tracks = {t.uri: t for t in self._get_tracks(identifier)}
-            return [self.tracks[uri]] if filename else self.tracks.values()
+            _, _, identifier, _, filename = urisplit(uri)
+            tracks = self._lookup(identifier)
+            self._tracks = trackmap = {t.uri: t for t in tracks}
+            return [trackmap[uri]] if filename else tracks
         except Exception as e:
-            logger.error('Internet Archive lookup failed for %r: %s', uri, e)
+            logger.error('Lookup failed for %s: %s', uri, e)
             return []
 
-    def find_exact(self, query=None, uris=None):
+    def browse(self, uri):
         try:
-            return self._search(Query(query, True) if query else None)
+            identifier = urisplit(uri).path
+            if not identifier:
+                return self._browse_root()
+            elif identifier in self._config['collections']:
+                return self._browse_collection(identifier)
+            else:
+                return self._browse_item(identifier)
+        except Exception as e:
+            logger.error('Error browsing %s: %s', uri, e)
+            return []
+
+    def search(self, query=None, uris=None):
+        try:
+            q = []
+            for field, value in (query.iteritems() if query else []):
+                if field not in _QUERY_MAPPING:
+                    continue  # skip unsupported fields
+                elif isinstance(value, basestring):
+                    q.append((_QUERY_MAPPING[field], value))
+                else:
+                    q.extend((_QUERY_MAPPING[field], v) for v in value)
+            if uris:
+                collections = (urisplit(uri).path for uri in uris)
+                q.append(('collection', tuple(id for id in collections if id)))
+            return self._search(*q)
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
 
-    def search(self, query=None, uris=None):
+    def find_exact(self, query=None, uris=None):
         try:
-            return self._search(Query(query, False) if query else None)
+            q = []
+            for field, value in (query.iteritems() if query else []):
+                if field not in _QUERY_MAPPING:
+                    return None  # no result if unmapped fields
+                elif isinstance(value, basestring):
+                    q.append((_QUERY_MAPPING[field], value))
+                else:
+                    q.extend((_QUERY_MAPPING[field], v) for v in value)
+            if uris:
+                collections = (urisplit(uri).path for uri in uris)
+                q.append(('collection', tuple(id for id in collections if id)))
+            return self._search(*q)  # TODO: filter result for exact match?
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
 
     def refresh(self, uri=None):
         logger.info('Clearing Internet Archive cache')
-        if self.backend.client.cache:
-            self.backend.client.cache.clear()
-        self.collections.clear()
-        self.tracks.clear()
+        self._cache.clear()
+        self._tracks.clear()
 
-    def _load_bookmarks(self, usernames):
-        refs = {}
-        for username in usernames:
-            try:
-                # raise error if username does not exit, cache for later
-                self.backend.client.bookmarks(username)
-            except Exception as e:
-                logger.warn("Cannot load %s's Internet Archive bookmarks: %s",
-                            username, e)
-                continue
-            uri = self.get_bookmarks_uri(username)
-            name = self.config['bookmarks_label'].format(username)
-            refs[uri] = Ref.directory(uri=uri, name=name)
-        logger.info("Loaded %d Internet Archive bookmarks", len(refs))
+    def get_stream_url(self, uri):
+        _, _, identifier, _, filename = urisplit(uri)
+        return self.backend.client.geturl(identifier, filename)
+
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
+    def _browse_root(self):
+        collections = self._config['collections']
+        result = self.backend.client.search(
+            _query(identifier=collections, mediatype='collection'),
+            fields=['identifier', 'title'],
+            rows=len(collections)
+        )
+        # return in same order as listed in config
+        docs = {doc['identifier']: doc for doc in result}
+        refs = []
+        for id in collections:
+            if id in docs:
+                refs.append(_ref(docs[id]))
+            else:
+                logger.warn('Internet Archive collection "%s" not found', id)
         return refs
 
-    def _load_collections(self, identifiers):
-        refs = {}
-        for identifier in identifiers:
-            try:
-                path = identifier + '/metadata'
-                item = self.backend.client.metadata(path)
-            except Exception as e:
-                logger.warn('Cannot load Internet Archive item %r: %s',
-                            identifier, e)
-                continue
-            if item['mediatype'] != 'collection':
-                logger.warn('Internet Archive item %r is not a collection',
-                            identifier)
-                continue
-            uri = self.get_item_uri(identifier)
-            name = parse_title(item.get('title'), identifier, ref=True)
-            refs[uri] = Ref.directory(uri=uri, name=name)
-        logger.info("Loaded %d Internet Archive collections", len(refs))
-        return refs
-
-    def _browse_bookmarks(self, username):
-        result = self.backend.client.bookmarks(username)
-        return [self._doc_to_ref(doc) for doc in result]
-
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_collection(self, identifier):
         result = self.backend.client.search(
-            self.backend.client.query_string({
-                'collection': identifier,
-                '-collection': self.config['excludes'],
-                'mediatype': self.config['mediatypes'],
-                'format': self.config['formats'],
-            }, group='OR'),
-            fields=BROWSE_FIELDS,
-            sort=(self.config['browse_order'],),
-            rows=self.config['browse_limit']
+            _query(collection=identifier, **self._search_filter),
+            fields=['identifier', 'title'],
+            sort=self._config['browse_order'],
+            rows=self._config['browse_limit']
         )
-        return [self._doc_to_ref(doc) for doc in result]
+        return [_ref(doc) for doc in result]
 
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_item(self, identifier):
-        tracks = self._get_tracks(identifier)
-        self.tracks = {t.uri: t for t in tracks}  # cache tracks
+        tracks = self._lookup(identifier)
+        self._tracks = {t.uri: t for t in tracks}  # cache tracks
         return [Ref.track(uri=t.uri, name=t.name) for t in tracks]
 
-    def _browse_root(self):
-        # fix temporary (e.g. network) errors at startup
-        if len(self.bookmarks) != len(self.config['bookmarks']):
-            missing = filter(
-                lambda v: self.get_bookmarks_uri(v) not in self.bookmarks,
-                self.config['bookmarks']
-            )
-            self.bookmarks.update(self._load_bookmarks(missing))
-        if len(self.collections) != len(self.config['collections']):
-            missing = filter(
-                lambda v: self.get_item_uri(v) not in self.collections,
-                self.config['collections']
-            )
-            self.collections.update(self._load_collections(missing))
-        return self.bookmarks.values() + self.collections.values()
-
-    def _doc_to_ref(self, doc):
-        return Ref.directory(
-            uri=self.get_item_uri(doc['identifier']),
-            name=parse_title(doc.get('title'), doc['identifier'], ref=True)
-        )
-
-    def _doc_to_album(self, doc):
-        return Album(
-            uri=self.get_item_uri(doc['identifier']),
-            name=parse_title(doc.get('title'), doc['identifier']),
-            artists=parse_creator(doc.get('creator')),
-            date=parse_date(doc.get('date'))
-        )
-
-    def _search(self, query):
-        if query:
-            qs = self.search_query + ' ' + self.backend.client.query_string({
-                QUERY_MAP[k]: query[k] for k in query if k in QUERY_MAP
-            })
-        else:
-            qs = self.search_query
-        result = self.backend.client.search(
-            qs,
-            fields=SEARCH_FIELDS,
-            sort=(self.config['search_order'],),
-            rows=self.config['search_limit']
-        )
-        albums = []
-        for i, doc in enumerate(result):
-            album = self._doc_to_album(doc)
-            if not query or query.match(album):
-                albums.append(album)
-            else:
-                logger.debug('Removing #%d from search result: %r', i, doc)
-        return SearchResult(albums=albums)
-
-    def _get_tracks(self, identifier):
-        item = self.backend.client.metadata(identifier)
-        audiofiles, imagefiles, namedfiles = self._get_files(item['files'])
-
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
+    def _lookup(self, identifier):
+        client = self.backend.client
+        item = client.metadata(identifier)
+        # TODO: original vs. derived, "tmp" values?
+        files = collections.defaultdict(list)
+        for file in item['files']:
+            files[file['format']].append(file)
         images = []
-        for f in imagefiles:
-            images.append(self.get_image_url(identifier, f['name']))
-        album = self._doc_to_album(item['metadata']).copy(images=images)
-
+        for file in self._image_files(files):
+            images.append(client.geturl(identifier, file['name']))
+        album = _album(item['metadata'], images)
         tracks = []
-        for f in audiofiles:
-            # for derived files, some attributes may be missing
-            if 'original' in f and f['original'] in namedfiles:
-                original = namedfiles[f['original']]
-                f.update({k: original[k] for k in original if k not in f})
-            tracks.append(Track(
-                uri=self.get_file_uri(identifier, f['name']),
-                name=parse_title(f.get('title'), f['name']),
-                artists=parse_creator(f.get('creator'), album.artists),
-                album=album,
-                track_no=parse_track(f.get('track')),
-                date=parse_date(f.get('date'), album.date),
-                length=parse_length(f.get('length')),
-                bitrate=parse_bitrate(f.get('bitrate')),
-                last_modified=parse_mtime(f.get('mtime'))
-            ))
+        for file in self._audio_files(files):
+            tracks.append(_track(identifier, file, album))
+        # sort tracks by track_no if given, by uri/filename otherwise
+        tracks.sort(key=lambda t: (t.track_no or 0, t.uri))
         return tracks
 
-    def _get_files(self, files):
-        byname = {}
-        byformat = defaultdict(list)
-        for f in files:
-            byname[f['name']] = f
-            byformat[f['format'].lower()].append(f)
-        # get image files for album artwork
-        images = byformat.get('jpeg', [])
-        # filter audio formats
-        for fmt in [fmt.lower() for fmt in self.config['formats']]:
-            if fmt in byformat:
-                return (byformat[fmt], images, byname)
-            for key in byformat.keys():
-                if fmt in key:
-                    return (byformat[key], images, byname)
-        return ([], images, byname)
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
+    def _search(self, *args):
+        result = self.backend.client.search(
+            _query(*args, **self._search_filter),
+            fields=['identifier', 'title', 'creator', 'date'],
+            sort=self._config['search_order'],
+            rows=self._config['search_limit']
+        )
+        uri = uricompose(Extension.ext_name, query=result.query)
+        return SearchResult(uri=uri, albums=[_album(doc) for doc in result])
+
+    def _audio_files(self, files):
+        for fmt in self._config['audio_formats']:
+            if fmt in files:
+                return files[fmt]
+        return []
+
+    def _image_files(self, files):
+        for fmt in self._config['image_formats']:
+            if fmt in files:
+                return files[fmt]
+        return []

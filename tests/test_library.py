@@ -15,18 +15,18 @@ class LibraryTest(unittest.TestCase):
     config = {
         'internetarchive': {
             'base_url': 'http://archive.org',
+            'username': None,
             'collections': ('etree', 'audio'),
-            'mediatypes': ('etree', 'audio'),
-            'formats': ('MP3'),
-            'excludes': (),
-            'bookmarks': (),
-            'sort_order': 'downloads desc',
-            'browse_label': 'ia',
-            'bookmarks_label': "{0}'s Bookmarks",
+            'audio_formats': ('MP3'),
+            'image_formats': ('JPEG'),
             'browse_limit': None,
+            'browse_order': None,
             'search_limit': None,
+            'search_order': None,
+            'exclude_collections': (),
+            'exclude_mediatypes': (),
             'cache_size': 1,
-            'cache_ttl': 1,
+            'cache_ttl': None,
             'timeout': None
         }
     }

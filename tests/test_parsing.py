@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import unittest
 
-from mopidy.models import Artist
 from mopidy_internetarchive.parsing import *  # noqa
 
 
@@ -22,23 +21,6 @@ class ParsingTest(unittest.TestCase):
         self.assertEqual(parse_bitrate('0'), 0)
         self.assertEqual(parse_bitrate('1'), 1)
         self.assertEqual(parse_bitrate('42.123'), 42)
-
-    def test_parse_creator(self):
-        ax, ay = Artist(name='x'), Artist(name='y')
-
-        self.assertEqual(parse_creator(None), [])
-        self.assertEqual(parse_creator(''), [])
-        self.assertEqual(parse_creator([]), [])
-        self.assertEqual(parse_creator([{}]), [])
-
-        self.assertEqual(parse_creator(None, [ax]), [ax])
-        self.assertEqual(parse_creator('', [ax]), [ax])
-        self.assertEqual(parse_creator([], [ax]), [ax])
-        self.assertEqual(parse_creator([{}], [ax]), [ax])
-
-        self.assertEqual(parse_creator('x'), [ax])
-        self.assertEqual(parse_creator(['x']), [ax])
-        self.assertEqual(parse_creator(['x', 'y']), [ax, ay])
 
     def test_parse_date(self):
         self.assertEqual(parse_date(None), None)
@@ -88,34 +70,18 @@ class ParsingTest(unittest.TestCase):
         self.assertEqual(parse_mtime('0'), 0)
         self.assertEqual(parse_mtime('1'), 1)
 
-    def test_parse_title(self):
-        self.assertEqual(parse_title(None), None)
-        self.assertEqual(parse_title(''), None)
-        self.assertEqual(parse_title([]), None)
-        self.assertEqual(parse_title('tmp'), None)
+    def test_parse_track_no(self):
+        self.assertEqual(parse_track_no(None), None)
+        self.assertEqual(parse_track_no(''), None)
+        self.assertEqual(parse_track_no([]), None)
+        self.assertEqual(parse_track_no('tmp'), None)
 
-        self.assertEqual(parse_title(None, 'x'), 'x')
-        self.assertEqual(parse_title('', 'x'), 'x')
-        self.assertEqual(parse_title([], 'x'), 'x')
-        self.assertEqual(parse_title('tmp', 'x'), 'x')
+        self.assertEqual(parse_track_no(None, 42), 42)
+        self.assertEqual(parse_track_no('', 42), 42)
+        self.assertEqual(parse_track_no([], 42), 42)
+        self.assertEqual(parse_track_no('tmp', 42), 42)
 
-        self.assertEqual(parse_title('x'), 'x')
-        self.assertEqual(parse_title('x/y/z'), 'x/y/z')
-        self.assertEqual(parse_title('x', ref=True), 'x')
-        self.assertEqual(parse_title('x/y/z', ref=True), 'x_y_z')
-
-    def test_parse_track(self):
-        self.assertEqual(parse_track(None), None)
-        self.assertEqual(parse_track(''), None)
-        self.assertEqual(parse_track([]), None)
-        self.assertEqual(parse_track('tmp'), None)
-
-        self.assertEqual(parse_track(None, 42), 42)
-        self.assertEqual(parse_track('', 42), 42)
-        self.assertEqual(parse_track([], 42), 42)
-        self.assertEqual(parse_track('tmp', 42), 42)
-
-        self.assertEqual(parse_track('0'), 0)
-        self.assertEqual(parse_track('1'), 1)
-        self.assertEqual(parse_track('1/100'), 1)
-        self.assertEqual(parse_track('1/tmp'), 1)
+        self.assertEqual(parse_track_no('0'), 0)
+        self.assertEqual(parse_track_no('1'), 1)
+        self.assertEqual(parse_track_no('1/100'), 1)
+        self.assertEqual(parse_track_no('1/tmp'), 1)

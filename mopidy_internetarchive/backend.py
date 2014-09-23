@@ -5,37 +5,33 @@ import pykka
 
 from mopidy import backend
 
-from .iaclient import InternetArchiveClient
+from . import Extension
+from .client import InternetArchiveClient
 from .library import InternetArchiveLibraryProvider
 from .playback import InternetArchivePlaybackProvider
-from .lrucache import LRUCache
+from .playlists import InternetArchivePlaylistsProvider
 
 logger = logging.getLogger(__name__)
 
 
 class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
 
-    SCHEME = 'internetarchive'
-
-    uri_schemes = [SCHEME]
-
-    _cache = None
+    uri_schemes = [Extension.ext_name]
 
     def __init__(self, config, audio):
         super(InternetArchiveBackend, self).__init__()
-        self.config = config
-
-        base_url = config[self.SCHEME]['base_url']
-        timeout = config[self.SCHEME]['timeout']
-        cache_size = config[self.SCHEME]['cache_size']
-        cache_ttl = config[self.SCHEME]['cache_ttl']
-
-        logger.debug("Internet Archive URL=%s, timeout=%r, cache=%r",
-                     base_url, timeout, (cache_size, cache_ttl))
-        if cache_size and cache_ttl:
-            cache = LRUCache(maxsize=cache_size, ttl=cache_ttl)
-        else:
-            cache = None
-        self.client = InternetArchiveClient(base_url, timeout, cache=cache)
-        self.library = InternetArchiveLibraryProvider(self)
+        self.client = InternetArchiveClient(
+            config[Extension.ext_name]['base_url'],
+            config[Extension.ext_name]['timeout'],
+        )
+        self.library = InternetArchiveLibraryProvider(config, self)
         self.playback = InternetArchivePlaybackProvider(audio, self)
+
+        if config[Extension.ext_name]['username']:
+            self.playlists = InternetArchivePlaylistsProvider(config, self)
+
+    def on_start(self):
+        # give other backends a chance to load, too...
+        if self.playlists:
+            self.playlists.refresh()
+        super(InternetArchiveBackend, self).on_start()
