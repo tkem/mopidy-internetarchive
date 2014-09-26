@@ -17,11 +17,11 @@ Project Resources
 ------------------------------------------------------------------------
 
 .. image:: http://img.shields.io/pypi/v/Mopidy-InternetArchive.svg
-    :target: https://pypi.python.org/pypi/InternetArchive/
+    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Latest PyPI version
 
 .. image:: http://img.shields.io/pypi/dm/Mopidy-InternetArchive.svg
-    :target: https://pypi.python.org/pypi/InternetArchive/
+    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Number of PyPI downloads
 
 .. image:: https://readthedocs.org/projects/mopidy-internetarchive/badge/?version=latest
