@@ -24,6 +24,10 @@ Project Resources
     :target: https://pypi.python.org/pypi/InternetArchive/
     :alt: Number of PyPI downloads
 
+.. image:: https://readthedocs.org/projects/mopidy-internetarchive/badge/?version=latest
+   :target: https://readthedocs.org/projects/mopidy-internetarchive/?badge=latest
+   :alt: Documentation Status
+
 - `Documentation`_
 - `Issue Tracker`_
 - `Source Code`_
