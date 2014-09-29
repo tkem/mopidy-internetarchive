@@ -24,7 +24,7 @@ Project Resources
     :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Number of PyPI downloads
 
-.. image:: https://readthedocs.org/projects/mopidy-internetarchive/badge/?version=latest
+.. image:: https://readthedocs.org/projects/mopidy-internetarchive/badge/?version=latest&style=flat
    :target: https://readthedocs.org/projects/mopidy-internetarchive/?badge=latest
    :alt: Documentation Status
 
