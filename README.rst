@@ -16,11 +16,11 @@ Mopidy-InternetArchive can be installed using pip_ by running::
 Project Resources
 ------------------------------------------------------------------------
 
-.. image:: http://img.shields.io/pypi/v/Mopidy-InternetArchive.svg
+.. image:: https://img.shields.io/pypi/v/Mopidy-InternetArchive.svg?style=flat
     :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Latest PyPI version
 
-.. image:: http://img.shields.io/pypi/dm/Mopidy-InternetArchive.svg
+.. image:: https://img.shields.io/pypi/dm/Mopidy-InternetArchive.svg?style=flat
     :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Number of PyPI downloads
 
