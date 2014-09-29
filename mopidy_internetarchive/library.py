@@ -40,9 +40,9 @@ def _cache(cache_size=None, cache_ttl=None, **kwargs):
 
 
 def _ref(metadata):
-    id = metadata['identifier']
-    uri = _URI_PREFIX + id
-    name = metadata.get('title', id)
+    identifier = metadata['identifier']
+    uri = _URI_PREFIX + identifier
+    name = metadata.get('title', identifier)
     return Ref.directory(uri=uri, name=name)
 
 
@@ -50,21 +50,23 @@ def _artists(metadata, default=[]):
     creator = metadata.get('creator')
     if not creator:
         return default
-    if isinstance(creator, basestring):
-        creator = [creator]
-    return [Artist(name=name) for name in creator]
+    elif isinstance(creator, basestring):
+        return [Artist(name=creator)]
+    else:
+        return [Artist(name=name) for name in creator]
 
 
 def _album(metadata, images=[]):
-    id = metadata['identifier']
-    uri = _URI_PREFIX + id
-    name = metadata.get('title', id)
+    identifier = metadata['identifier']
+    uri = _URI_PREFIX + identifier
+    name = metadata.get('title', identifier)
     artists = _artists(metadata)
     date = parse_date(metadata.get('date'))
     return Album(uri=uri, name=name, artists=artists, date=date, images=images)
 
 
-def _track(identifier, file, album):
+def _track(metadata, file, album):
+    identifier = metadata['identifier']
     filename = file['name']
     uri = _URI_PREFIX + identifier + '#' + filename
     name = file.get('title', filename)
@@ -77,6 +79,7 @@ def _track(identifier, file, album):
         date=parse_date(file.get('date'), album.date),
         length=parse_length(file.get('length')),
         bitrate=parse_bitrate(file.get('bitrate')),
+        comment=metadata.get('description'),
         last_modified=parse_mtime(file.get('mtime'))
     )
 
@@ -254,7 +257,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         album = _album(item['metadata'], images)
         tracks = []
         for file in _getfirstitem(files, self._config['audio_formats'], []):
-            tracks.append(_track(identifier, file, album))
+            tracks.append(_track(item['metadata'], file, album))
         # sort tracks by track_no if given, by uri/filename otherwise
         tracks.sort(key=lambda t: (t.track_no or 0, t.uri))
         return tracks
