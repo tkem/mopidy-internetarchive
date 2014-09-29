@@ -13,6 +13,7 @@ from uritools import uricompose, urisplit
 
 from . import Extension
 from .parsing import *  # noqa
+from .query import Query
 
 _URI_PREFIX = Extension.ext_name + ':'
 
@@ -21,7 +22,6 @@ _QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 _QUERY_MAPPING = {
     'any': None,
     'album': 'title',
-    'artist': 'creator',
     'albumartist': 'creator',
     'date': 'date'
 }
@@ -79,6 +79,13 @@ def _track(identifier, file, album):
         bitrate=parse_bitrate(file.get('bitrate')),
         last_modified=parse_mtime(file.get('mtime'))
     )
+
+
+def _getfirstitem(object, keys, default=None):
+    for key in keys:
+        if key in object:
+            return object[key]
+    return default
 
 
 def _quote(term):
@@ -154,36 +161,38 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def search(self, query=None, uris=None):
         try:
-            q = []
+            terms = []
             for field, value in (query.iteritems() if query else []):
                 if field not in _QUERY_MAPPING:
-                    continue  # skip unsupported fields
+                    return None  # no result if unmapped field
                 elif isinstance(value, basestring):
-                    q.append((_QUERY_MAPPING[field], value))
+                    terms.append((_QUERY_MAPPING[field], value))
                 else:
-                    q.extend((_QUERY_MAPPING[field], v) for v in value)
+                    terms.extend((_QUERY_MAPPING[field], v) for v in value)
             if uris:
-                collections = (urisplit(uri).path for uri in uris)
-                q.append(('collection', tuple(id for id in collections if id)))
-            return self._search(*q)
+                ids = filter(None, (urisplit(uri).path for uri in uris))
+                terms.append(('collection', tuple(ids)))
+            return self._search(*terms)
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
 
     def find_exact(self, query=None, uris=None):
         try:
-            q = []
+            terms = []
             for field, value in (query.iteritems() if query else []):
                 if field not in _QUERY_MAPPING:
-                    return None  # no result if unmapped fields
+                    return None  # no result if unmapped field
                 elif isinstance(value, basestring):
-                    q.append((_QUERY_MAPPING[field], value))
+                    terms.append((_QUERY_MAPPING[field], value))
                 else:
-                    q.extend((_QUERY_MAPPING[field], v) for v in value)
+                    terms.extend((_QUERY_MAPPING[field], v) for v in value)
             if uris:
-                collections = (urisplit(uri).path for uri in uris)
-                q.append(('collection', tuple(id for id in collections if id)))
-            return self._search(*q)  # TODO: filter result for exact match?
+                ids = filter(None, (urisplit(uri).path for uri in uris))
+                terms.append(('collection', tuple(ids)))
+            result = self._search(*terms)
+            albums = filter(Query(query, True).match_album, result.albums)
+            return result.copy(albums=albums)
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
@@ -240,35 +249,23 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         for file in item['files']:
             files[file['format']].append(file)
         images = []
-        for file in self._image_files(files):
+        for file in _getfirstitem(files, self._config['image_formats'], []):
             images.append(client.geturl(identifier, file['name']))
         album = _album(item['metadata'], images)
         tracks = []
-        for file in self._audio_files(files):
+        for file in _getfirstitem(files, self._config['audio_formats'], []):
             tracks.append(_track(identifier, file, album))
         # sort tracks by track_no if given, by uri/filename otherwise
         tracks.sort(key=lambda t: (t.track_no or 0, t.uri))
         return tracks
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _search(self, *args):
+    def _search(self, *terms):
         result = self.backend.client.search(
-            _query(*args, **self._search_filter),
+            _query(*terms, **self._search_filter),
             fields=['identifier', 'title', 'creator', 'date'],
             sort=self._config['search_order'],
             rows=self._config['search_limit']
         )
         uri = uricompose(Extension.ext_name, query=result.query)
         return SearchResult(uri=uri, albums=[_album(doc) for doc in result])
-
-    def _audio_files(self, files):
-        for fmt in self._config['audio_formats']:
-            if fmt in files:
-                return files[fmt]
-        return []
-
-    def _image_files(self, files):
-        for fmt in self._config['image_formats']:
-            if fmt in files:
-                return files[fmt]
-        return []
