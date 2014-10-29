@@ -1,7 +1,7 @@
 Introduction
 ========================================================================
 
-About the Internet Archive Metdata Model
+About the Internet Archive Metadata Model
 ------------------------------------------------------------------------
 
 .. note::
