@@ -43,7 +43,10 @@ def _ref(metadata):
     identifier = metadata['identifier']
     uri = _URI_PREFIX + identifier
     name = metadata.get('title', identifier)
-    return Ref.directory(uri=uri, name=name)
+    if metadata.get('mediatype', 'collection') == 'collection':
+        return Ref.directory(uri=uri, name=name)
+    else:
+        return Ref.album(uri=uri, name=name)
 
 
 def _artists(metadata, default=[]):
@@ -214,7 +217,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         collections = self._config['collections']
         result = self.backend.client.search(
             _query(identifier=collections, mediatype='collection'),
-            fields=['identifier', 'title'],
+            fields=['identifier', 'title', 'mediatype'],
             rows=len(collections)
         )
         # return in same order as listed in config
@@ -231,11 +234,11 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def _browse_collection(self, identifier):
         result = self.backend.client.search(
             _query(collection=identifier, **self._search_filter),
-            fields=['identifier', 'title'],
+            fields=['identifier', 'title', 'mediatype'],
             sort=self._config['browse_order'],
             rows=self._config['browse_limit']
         )
-        return [_ref(doc) for doc in result]
+        return map(_ref, result)
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_item(self, identifier):
