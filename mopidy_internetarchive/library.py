@@ -79,7 +79,7 @@ def _track(metadata, file, album):
         date=parse_date(file.get('date'), album.date),
         length=parse_length(file.get('length')),
         bitrate=parse_bitrate(file.get('bitrate')),
-        comment=metadata.get('description'),
+        # FIXME: comment=metadata.get('description'),
         last_modified=parse_mtime(file.get('mtime'))
     )
 
