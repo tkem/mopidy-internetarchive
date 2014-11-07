@@ -26,7 +26,7 @@ setup(
         'setuptools',
         'Mopidy >= 0.19',
         'requests >= 2.0.0',
-        'cachetools >= 0.5.1',
+        'cachetools >= 0.6.0',
         'uritools >= 0.6.0'
     ],
     test_suite='nose.collector',

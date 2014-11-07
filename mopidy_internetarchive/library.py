@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 def _cache(cache_size=None, cache_ttl=None, **kwargs):
     """Cache factory"""
     if cache_size is None:
-        return dict()  # for testing/debugging
+        return None  # mainly for testing/debugging
     elif cache_ttl is None:
         return cachetools.LRUCache(cache_size)
     else:

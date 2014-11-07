@@ -55,7 +55,7 @@ class Extension(ext.Extension):
         schema['search_order'] = config.String(choices=SORT_FIELDS, optional=True)  # noqa
         schema['exclude_collections'] = config.List(optional=True)
         schema['exclude_mediatypes'] = config.List(optional=True)
-        schema['cache_size'] = config.Integer(minimum=1)
+        schema['cache_size'] = config.Integer(minimum=1, optional=True)
         schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
 
