@@ -1,3 +1,17 @@
+1.0.2 2014-11-07
+----------------
+
+- Update dependencies.
+
+- Browse Internet Archive items as albums.
+
+- Make caching optional.
+
+- Disable PNG image format in default configuration.
+
+- Temporarily disable VBR MP3 and track comments.
+
+
 1.0.1 2014-09-29
 ----------------
 
