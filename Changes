@@ -1,3 +1,11 @@
+1.0.3 2014-11-14
+----------------
+
+- Fix handling of re-derived VBR MP3 files.
+
+- Remove Ogg Vorbis from default audio formats.
+
+
 1.0.2 2014-11-07
 ----------------
 
