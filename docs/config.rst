@@ -38,14 +38,6 @@ Configuration Values
    recommended that you stick to lossy audio formats for streaming
    through Mopidy.
 
-   .. note:: Due to recent changes in the archive.org database still
-             under investigation, use of the `VBR MP3` format is
-             currently not recommended.  If you see duplicate tracks
-             when browsing the Internet Archive, please remove `VBR
-             MP3` from the configuration.  Until this issue has been
-             resolved, `Ogg Vorbis` is recommended as an alternative
-             streaming format.
-
 .. confval:: internetarchive/image_formats
 
    A list of image file formats, in order of preference.

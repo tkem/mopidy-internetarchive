@@ -3,4 +3,5 @@ omit =
     */pyshared/*
     */python?.?/*
     */site-packages/nose/*
-    */uritools.py
+    */cachetools/*
+    */uritools/*

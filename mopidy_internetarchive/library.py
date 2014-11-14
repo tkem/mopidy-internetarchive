@@ -87,10 +87,14 @@ def _track(metadata, file, album):
     )
 
 
-def _getfirstitem(object, keys, default=None):
+def _trackkey(track):
+    return (track.track_no or 0, track.uri)
+
+
+def _find(mapping, keys, default=None):
     for key in keys:
-        if key in object:
-            return object[key]
+        if key in mapping:
+            return mapping[key]
     return default
 
 
@@ -250,19 +254,22 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def _lookup(self, identifier):
         client = self.backend.client
         item = client.metadata(identifier)
-        # TODO: original vs. derived, "tmp" values?
-        files = collections.defaultdict(list)
-        for file in item['files']:
-            files[file['format']].append(file)
+        files = collections.defaultdict(dict)
+        # HACK: not all files have "mtime", but reverse-sorting on
+        # filename tends to preserve "l(e)ast derived" versions,
+        # e.g. "filename.mp3" over "filename_vbr.mp3"
+        key = operator.itemgetter('name')
+        for file in sorted(item['files'], key=key, reverse=True):
+            original = str(file.get('original', file['name']))
+            files[file['format']][original] = file
         images = []
-        for file in _getfirstitem(files, self._config['image_formats'], []):
+        for file in _find(files, self._config['image_formats'], {}).values():
             images.append(client.geturl(identifier, file['name']))
         album = _album(item['metadata'], images)
         tracks = []
-        for file in _getfirstitem(files, self._config['audio_formats'], []):
+        for file in _find(files, self._config['audio_formats'], {}).values():
             tracks.append(_track(item['metadata'], file, album))
-        # sort tracks by track_no if given, by uri/filename otherwise
-        tracks.sort(key=lambda t: (t.track_no or 0, t.uri))
+        tracks.sort(key=_trackkey)
         return tracks
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
