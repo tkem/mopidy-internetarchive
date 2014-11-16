@@ -12,7 +12,7 @@ __all__ = (
     'parse_track_no'
 )
 
-_DURATION_RE = re.compile(r"""
+DURATION_RE = re.compile(r"""
 (?:
     (?:(?P<hours>\d+):)?
     (?P<minutes>\d+):
@@ -20,7 +20,7 @@ _DURATION_RE = re.compile(r"""
 (?P<seconds>\d+)
 """, flags=re.VERBOSE)
 
-_ISODATE_RE = re.compile(r"""
+ISODATE_RE = re.compile(r"""
 (\d{4})
 (?:\-(\d{2}))?
 (?:\-(\d{2}))?
@@ -41,7 +41,7 @@ def parse_bitrate(string, default=None):
 def parse_date(string, default=None):
     if string:
         try:
-            return '-'.join(_ISODATE_RE.match(string).groups('01'))
+            return '-'.join(ISODATE_RE.match(string).groups('01'))
         except:
             logger.warn('Invalid Internet Archive date: %r', string)
     return default
@@ -50,7 +50,7 @@ def parse_date(string, default=None):
 def parse_length(string, default=None):
     if string:
         try:
-            groups = _DURATION_RE.match(string).groupdict('0')
+            groups = DURATION_RE.match(string).groupdict('0')
             d = datetime.timedelta(**{k: int(v) for k, v in groups.items()})
             return int(d.total_seconds() * 1000)
         except:

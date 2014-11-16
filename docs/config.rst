@@ -18,8 +18,8 @@ Configuration Values
 
 .. confval:: internetarchive/username
 
-   Your Internet Archive user name, needed to provide your bookmarks
-   as a playlist in Mopidy.
+   Your archive.org user name.  This is only needed if you want to
+   access your Internet Archive bookmarks as playlists in Mopidy.
 
 .. confval:: internetarchive/collections
 

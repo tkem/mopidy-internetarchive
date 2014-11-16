@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import unittest
 
 from mopidy.models import Artist, Album, Track, Ref
-from mopidy_podcast.query import Query
+from mopidy_internetarchive.query import Query
 
 
 def anycase(*strings):

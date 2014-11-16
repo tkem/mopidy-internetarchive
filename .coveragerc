@@ -3,5 +3,6 @@ omit =
     */pyshared/*
     */python?.?/*
     */site-packages/nose/*
+    */mopidy/*
     */cachetools/*
     */uritools/*

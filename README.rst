@@ -24,6 +24,14 @@ Project Resources
     :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Number of PyPI downloads
 
+.. image:: http://img.shields.io/travis/tkem/mopidy-internetarchive/master.svg?style=flat
+    :target: https://travis-ci.org/tkem/mopidy-internetarchive/
+    :alt: Travis CI build status
+
+.. image:: http://img.shields.io/coveralls/tkem/mopidy-internetarchive/master.svg?style=flat
+   :target: https://coveralls.io/r/tkem/mopidy-internetarchive/
+   :alt: Test coverage
+
 .. image:: https://readthedocs.org/projects/mopidy-internetarchive/badge/?version=latest&style=flat
    :target: https://readthedocs.org/projects/mopidy-internetarchive/?badge=latest
    :alt: Documentation Status

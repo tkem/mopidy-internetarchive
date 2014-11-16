@@ -58,15 +58,6 @@ class Extension(ext.Extension):
         schema['cache_size'] = config.Integer(minimum=1, optional=True)
         schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
-
-        # no longer used (for now)
-        schema['bookmarks'] = config.Deprecated()
-        schema['bookmarks_label'] = config.Deprecated()
-        schema['browse_label'] = config.Deprecated()
-        schema['excludes'] = config.Deprecated()
-        schema['mediatypes'] = config.Deprecated()
-        schema['sort_order'] = config.Deprecated()
-
         return schema
 
     def setup(self, registry):
