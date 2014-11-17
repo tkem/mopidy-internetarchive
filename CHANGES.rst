@@ -1,3 +1,9 @@
+1.1.0 UNRELEASED
+----------------
+
+- Load bookmarks as individual playlists.
+
+
 1.0.3 2014-11-14
 ----------------
 
@@ -39,7 +45,7 @@
 
 - Update `README` with link to documentation.
 
-- New config values: `search_order`, `browse_order`.
+- New config values: ``search_order``, ``browse_order``.
 
 - Allow empty queries for searching.
 
