@@ -3,6 +3,8 @@
 
 - Load bookmarks as individual playlists.
 
+- Encode filenames in URIs.
+
 
 1.0.3 2014-11-14
 ----------------
