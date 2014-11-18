@@ -57,6 +57,7 @@ class Extension(ext.Extension):
         schema['exclude_mediatypes'] = config.List(optional=True)
         schema['cache_size'] = config.Integer(minimum=1, optional=True)
         schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
+        schema['retries'] = config.Integer(minimum=0)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
         return schema
 

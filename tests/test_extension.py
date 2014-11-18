@@ -30,4 +30,5 @@ class ExtensionTest(unittest.TestCase):
         self.assertIn('exclude_mediatypes', schema)
         self.assertIn('cache_size', schema)
         self.assertIn('cache_ttl', schema)
+        self.assertIn('retries', schema)
         self.assertIn('timeout', schema)

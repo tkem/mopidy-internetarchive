@@ -92,10 +92,13 @@ Configuration Values
 
    The cache time-to-live in seconds.
 
+.. confval:: internetarchive/retries
+
+   The maximum number of retries each HTTP connection should attempt.
+
 .. confval:: internetarchive/timeout
 
-   The request timeout in seconds for HTTP requests to the Internet
-   Archive.
+   The timeout in seconds for HTTP requests to the Internet Archive.
 
 
 .. _sortorder:

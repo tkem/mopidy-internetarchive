@@ -22,7 +22,8 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
         super(InternetArchiveBackend, self).__init__()
         self.client = InternetArchiveClient(
             config[Extension.ext_name]['base_url'],
-            config[Extension.ext_name]['timeout']
+            retries=config[Extension.ext_name]['retries'],
+            timeout=config[Extension.ext_name]['timeout']
         )
         self.library = InternetArchiveLibraryProvider(config, self)
         self.playback = InternetArchivePlaybackProvider(audio, self)

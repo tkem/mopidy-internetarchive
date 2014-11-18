@@ -27,6 +27,7 @@ class LibraryTest(unittest.TestCase):
             'exclude_mediatypes': (),
             'cache_size': 1,
             'cache_ttl': None,
+            'retries': 0,
             'timeout': None
         }
     }

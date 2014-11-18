@@ -17,13 +17,18 @@ parser.add_argument('-F', '--fields', nargs='+')
 parser.add_argument('-i', '--indent', type=int, default=2)
 parser.add_argument('-q', '--query', action='store_true')
 parser.add_argument('-r', '--rows', type=int)
+parser.add_argument('-R', '--retries', type=int, default=0)
 parser.add_argument('-S', '--sort', nargs='+')
 parser.add_argument('-t', '--timeout', type=float)
 args = parser.parse_args()
 
 logging.basicConfig(level=logging.DEBUG if args.debug else logging.WARN)
 
-client = InternetArchiveClient(args.base_url, timeout=args.timeout)
+client = InternetArchiveClient(
+    args.base_url,
+    retries=args.retries,
+    timeout=args.timeout
+)
 
 if args.query:
     query = args.arg.decode(args.encoding)
