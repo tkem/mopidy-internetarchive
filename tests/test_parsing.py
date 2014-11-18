@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import unittest
 
+from mopidy.models import Artist
+
 from mopidy_internetarchive.parsing import *  # noqa
 
 
@@ -70,18 +72,35 @@ class ParsingTest(unittest.TestCase):
         self.assertEqual(parse_mtime('0'), 0)
         self.assertEqual(parse_mtime('1'), 1)
 
-    def test_parse_track_no(self):
-        self.assertEqual(parse_track_no(None), None)
-        self.assertEqual(parse_track_no(''), None)
-        self.assertEqual(parse_track_no([]), None)
-        self.assertEqual(parse_track_no('tmp'), None)
+    def test_parse_track(self):
+        self.assertEqual(parse_track(None), None)
+        self.assertEqual(parse_track(''), None)
+        self.assertEqual(parse_track([]), None)
+        self.assertEqual(parse_track('tmp'), None)
 
-        self.assertEqual(parse_track_no(None, 42), 42)
-        self.assertEqual(parse_track_no('', 42), 42)
-        self.assertEqual(parse_track_no([], 42), 42)
-        self.assertEqual(parse_track_no('tmp', 42), 42)
+        self.assertEqual(parse_track(None, 42), 42)
+        self.assertEqual(parse_track('', 42), 42)
+        self.assertEqual(parse_track([], 42), 42)
+        self.assertEqual(parse_track('tmp', 42), 42)
 
-        self.assertEqual(parse_track_no('0'), 0)
-        self.assertEqual(parse_track_no('1'), 1)
-        self.assertEqual(parse_track_no('1/100'), 1)
-        self.assertEqual(parse_track_no('1/tmp'), 1)
+        self.assertEqual(parse_track('0'), 0)
+        self.assertEqual(parse_track('1'), 1)
+        self.assertEqual(parse_track('1/100'), 1)
+        self.assertEqual(parse_track('1/tmp'), 1)
+
+    def test_parse_creator(self):
+        artist = Artist(name='foo')
+
+        self.assertEqual(parse_creator(None), None)
+        self.assertEqual(parse_creator(''), None)
+        self.assertEqual(parse_creator([]), None)
+        self.assertEqual(parse_creator('tmp'), None)
+
+        self.assertEqual(parse_creator(None, [artist]), [artist])
+        self.assertEqual(parse_creator('', [artist]), [artist])
+        self.assertEqual(parse_creator([], [artist]), [artist])
+        self.assertEqual(parse_creator('tmp', [artist]), [artist])
+
+        self.assertEqual(parse_creator('foo'), [artist])
+        self.assertEqual(parse_creator(['foo']), [artist])
+        self.assertEqual(parse_creator(['foo', 'foo']), [artist, artist])

@@ -4,12 +4,15 @@ import datetime
 import logging
 import re
 
+from mopidy.models import Artist
+
 __all__ = (
     'parse_bitrate',
     'parse_date',
     'parse_length',
     'parse_mtime',
-    'parse_track_no'
+    'parse_track',
+    'parse_creator'
 )
 
 DURATION_RE = re.compile(r"""
@@ -67,10 +70,19 @@ def parse_mtime(string, default=None):
     return default
 
 
-def parse_track_no(string, default=None):
+def parse_track(string, default=None):
     if string:
         try:
             return int(string.partition('/')[0])
         except:
-            logger.warn('Invalid Internet Archive track no.: %r', string)
+            logger.warn('Invalid Internet Archive track: %r', string)
     return default
+
+
+def parse_creator(obj, default=None):
+    if not obj or obj == 'tmp':
+        return default
+    elif isinstance(obj, basestring):
+        return [Artist(name=obj)]
+    else:
+        return [Artist(name=name) for name in obj]

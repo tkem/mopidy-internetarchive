@@ -9,7 +9,7 @@ import uritools
 import re
 
 from mopidy import backend
-from mopidy.models import Album, Artist, Track, SearchResult, Ref
+from mopidy.models import Album, Track, SearchResult, Ref
 
 from . import Extension
 from .parsing import *  # noqa
@@ -49,21 +49,11 @@ def _ref(metadata):
         return Ref.album(uri=uri, name=name)
 
 
-def _artists(metadata, default=[]):
-    creator = metadata.get('creator')
-    if not creator:
-        return default
-    elif isinstance(creator, basestring):
-        return [Artist(name=creator)]
-    else:
-        return [Artist(name=name) for name in creator]
-
-
 def _album(metadata, images=[]):
     identifier = metadata['identifier']
     uri = uritools.uricompose(SCHEME, path=identifier)
     name = metadata.get('title', identifier)
-    artists = _artists(metadata)
+    artists = parse_creator(metadata.get('creator'))
     date = parse_date(metadata.get('date'))
     return Album(uri=uri, name=name, artists=artists, date=date, images=images)
 
@@ -77,12 +67,11 @@ def _track(metadata, file, album):
         uri=uri,
         name=name,
         album=album,
-        artists=_artists(file, album.artists),
-        track_no=parse_track_no(file.get('track')),
+        artists=album.artists,
+        track_no=parse_track(file.get('track')),
         date=parse_date(file.get('date'), album.date),
         length=parse_length(file.get('length')),
         bitrate=parse_bitrate(file.get('bitrate')),
-        # FIXME: comment=metadata.get('description'),
         last_modified=parse_mtime(file.get('mtime'))
     )
 
