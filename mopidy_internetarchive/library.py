@@ -5,21 +5,21 @@ import collections
 import itertools
 import logging
 import operator
+import uritools
 import re
 
 from mopidy import backend
 from mopidy.models import Album, Artist, Track, SearchResult, Ref
-from uritools import uricompose, urisplit
 
 from . import Extension
 from .parsing import *  # noqa
 from .query import Query
 
-_URI_PREFIX = Extension.ext_name + ':'
+SCHEME = Extension.ext_name
 
-_QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
+QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
-_QUERY_MAPPING = {
+QUERY_MAPPING = {
     'any': None,
     'album': 'title',
     'albumartist': 'creator',
@@ -41,7 +41,7 @@ def _cache(cache_size=None, cache_ttl=None, **kwargs):
 
 def _ref(metadata):
     identifier = metadata['identifier']
-    uri = _URI_PREFIX + identifier
+    uri = uritools.uricompose(SCHEME, path=identifier)
     name = metadata.get('title', identifier)
     if metadata.get('mediatype', 'collection') == 'collection':
         return Ref.directory(uri=uri, name=name)
@@ -61,7 +61,7 @@ def _artists(metadata, default=[]):
 
 def _album(metadata, images=[]):
     identifier = metadata['identifier']
-    uri = _URI_PREFIX + identifier
+    uri = uritools.uricompose(SCHEME, path=identifier)
     name = metadata.get('title', identifier)
     artists = _artists(metadata)
     date = parse_date(metadata.get('date'))
@@ -71,7 +71,7 @@ def _album(metadata, images=[]):
 def _track(metadata, file, album):
     identifier = metadata['identifier']
     filename = file['name']
-    uri = _URI_PREFIX + identifier + '#' + filename
+    uri = uritools.uricompose(SCHEME, path=identifier, fragment=filename)
     name = file.get('title', filename)
     return Track(
         uri=uri,
@@ -99,7 +99,7 @@ def _find(mapping, keys, default=None):
 
 
 def _quote(term):
-    term = _QUERY_CHAR_RE.sub(r'\\\1', term)
+    term = QUERY_CHAR_RE.sub(r'\\\1', term)
     # only quote if term contains whitespace, since date:"2014-01-01"
     # will raise an error
     if any(c.isspace() for c in term):
@@ -127,19 +127,19 @@ def _query(*args, **kwargs):
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     root_directory = Ref.directory(
-        uri=_URI_PREFIX,
+        uri=uritools.uricompose(SCHEME),
         name='Internet Archive'
     )
 
     def __init__(self, config, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
-        self._config = iaconfig = config[Extension.ext_name]
+        self._config = ext_config = config[Extension.ext_name]
         self._search_filter = {
-            'format': iaconfig['audio_formats'],
-            '-collection': iaconfig['exclude_collections'],
-            '-mediatype': iaconfig['exclude_mediatypes']
+            'format': ext_config['audio_formats'],
+            '-collection': ext_config['exclude_collections'],
+            '-mediatype': ext_config['exclude_mediatypes']
         }
-        self._cache = _cache(**iaconfig)
+        self._cache = _cache(**ext_config)
         self._tracks = {}  # track cache for faster lookup
 
     def lookup(self, uri):
@@ -148,7 +148,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         except KeyError:
             logger.debug("track lookup cache miss %r", uri)
         try:
-            _, _, identifier, _, filename = urisplit(uri)
+            _, _, identifier, _, filename = uritools.urisplit(uri)
             tracks = self._lookup(identifier)
             self._tracks = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
@@ -158,7 +158,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def browse(self, uri):
         try:
-            identifier = urisplit(uri).path
+            identifier = uritools.urisplit(uri).path
             if not identifier:
                 return self._browse_root()
             elif identifier in self._config['collections']:
@@ -173,13 +173,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         try:
             terms = []
             for field, value in (query.iteritems() if query else []):
-                if field not in _QUERY_MAPPING:
+                if field not in QUERY_MAPPING:
                     return None  # no result if unmapped field
                 elif isinstance(value, basestring):
-                    terms.append((_QUERY_MAPPING[field], value))
+                    terms.append((QUERY_MAPPING[field], value))
                 else:
-                    terms.extend((_QUERY_MAPPING[field], v) for v in value)
+                    terms.extend((QUERY_MAPPING[field], v) for v in value)
             if uris:
+                urisplit = uritools.urisplit
                 ids = filter(None, (urisplit(uri).path for uri in uris))
                 terms.append(('collection', tuple(ids)))
             return self._search(*terms)
@@ -191,13 +192,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         try:
             terms = []
             for field, value in (query.iteritems() if query else []):
-                if field not in _QUERY_MAPPING:
+                if field not in QUERY_MAPPING:
                     return None  # no result if unmapped field
                 elif isinstance(value, basestring):
-                    terms.append((_QUERY_MAPPING[field], value))
+                    terms.append((QUERY_MAPPING[field], value))
                 else:
-                    terms.extend((_QUERY_MAPPING[field], v) for v in value)
+                    terms.extend((QUERY_MAPPING[field], v) for v in value)
             if uris:
+                urisplit = uritools.urisplit
                 ids = filter(None, (urisplit(uri).path for uri in uris))
                 terms.append(('collection', tuple(ids)))
             result = self._search(*terms)
@@ -211,10 +213,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         logger.info('Clearing Internet Archive cache')
         self._cache.clear()
         self._tracks.clear()
-
-    def get_stream_url(self, uri):
-        _, _, identifier, _, filename = urisplit(uri)
-        return self.backend.client.geturl(identifier, filename)
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_root(self):
@@ -280,5 +278,5 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=self._config['search_order'],
             rows=self._config['search_limit']
         )
-        uri = uricompose(Extension.ext_name, query=result.query)
+        uri = uritools.uricompose(Extension.ext_name, query=result.query)
         return SearchResult(uri=uri, albums=[_album(doc) for doc in result])

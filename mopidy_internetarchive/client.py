@@ -56,7 +56,7 @@ class InternetArchiveClient(object):
 
     def geturl(self, identifier, filename=None):
         if filename:
-            ref = identifier + '/' + filename
+            ref = identifier + '/' + uritools.uriencode(filename)
         else:
             ref = identifier + '/'
         return uritools.urijoin(self.download_url, ref)
