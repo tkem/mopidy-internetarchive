@@ -28,26 +28,33 @@ class InternetArchiveBookmarks(pykka.ThreadingActor):
             bookmarks = self.backend.client.bookmarks(self.username).get()
             logger.debug('Received %d Archive bookmarks', len(bookmarks))
             self.future.load(bookmarks)
+        except pykka.ActorDeadError:
+            self.stop()
         except Exception as e:
             logger.error('Error loading Archive bookmarks: %s', e)
 
     def load(self, bookmarks, playlists=[]):
         playlists = playlists[:]
-        if bookmarks:
-            doc = bookmarks.pop(0)
-            id = doc['identifier']
-            uri = '%s:%s' % (Extension.ext_name, id)
-            name = doc.get('title', id)
-            tracks = self.backend.library.lookup(uri).get()
-            if tracks:
-                playlists.append(Playlist(uri=uri, name=name, tracks=tracks))
+        try:
+            if bookmarks:
+                doc = bookmarks.pop(0)
+                id = doc['identifier']
+                uri = '%s:%s' % (Extension.ext_name, id)
+                name = doc.get('title', id)
+                tracks = self.backend.library.lookup(uri).get()
+                if tracks:
+                    playlists += [Playlist(uri=uri, name=name, tracks=tracks)]
+                else:
+                    logger.warn('Skipping empty Archive bookmark %s', name)
+                self.future.load(bookmarks, playlists)
             else:
-                logger.warn('Skipping Archive bookmark %s', name)
-            self.future.load(bookmarks, playlists)
-        else:
-            logger.info('Loaded %d Archive bookmarks', len(playlists))
-            self.backend.playlists.playlists = playlists
-            backend.BackendListener.send('playlists_loaded')
+                logger.info('Loaded %d Archive bookmarks', len(playlists))
+                self.backend.playlists.playlists = playlists
+                backend.BackendListener.send('playlists_loaded')
+        except pykka.ActorDeadError:
+            self.stop()
+        except Exception as e:
+            logger.error('Error loading Archive bookmarks: %s', e)
 
 
 class InternetArchivePlaylistsProvider(backend.PlaylistsProvider):
@@ -87,4 +94,8 @@ class InternetArchivePlaylistsProvider(backend.PlaylistsProvider):
     def stop(self):
         if self.bookmarks:
             logger.debug('Stopping %s', self.bookmarks)
-            self.bookmarks.stop(block=False)  # FIXME
+            try:
+                self.bookmarks.stop(timeout=1)
+            except pykka.Timeout:
+                # bookmarks actor may be waiting on backend
+                pykka.ActorRegistry.unregister(self.bookmarks)
