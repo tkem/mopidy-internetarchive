@@ -82,6 +82,8 @@ class InternetArchivePlaylistsProvider(backend.PlaylistsProvider):
 
     def refresh(self):
         if self.bookmarks:
+            # clear library cache
+            self.backend.library.refresh()
             self.bookmarks.proxy().refresh()
 
     def save(self, playlist):
