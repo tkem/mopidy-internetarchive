@@ -1,9 +1,13 @@
-1.1.0 UNRELEASED
+1.1.0 2014-11-19
 ----------------
 
 - Load bookmarks as individual playlists.
 
+- Clear library cache when refreshing playlists.
+
 - Encode filenames in URIs.
+
+- Add HTTP connection retries.
 
 
 1.0.3 2014-11-14
