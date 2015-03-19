@@ -29,6 +29,18 @@ QUERY_MAPPING = {
 logger = logging.getLogger(__name__)
 
 
+def _bookmarks(config):
+    if not config['username']:
+        return None
+    uri = uritools.uricompose(
+        scheme=SCHEME,
+        userinfo=config['username'],
+        host=uritools.urisplit(config['base_url']).host,
+        path='/bookmarks/'
+    )
+    return Ref.directory(name='Archive Bookmarks', uri=uri)
+
+
 def _cache(cache_size=None, cache_ttl=None, **kwargs):
     """Cache factory"""
     if cache_size is None:
@@ -128,6 +140,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             '-collection': ext_config['exclude_collections'],
             '-mediatype': ext_config['exclude_mediatypes']
         }
+        self._bookmarks = _bookmarks(ext_config)
         self._cache = _cache(**ext_config)
         self._tracks = {}  # track cache for faster lookup
 
@@ -146,14 +159,17 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return []
 
     def browse(self, uri):
+        logger.info('browse %r', uri)
         try:
-            identifier = uritools.urisplit(uri).path
-            if not identifier:
+            parts = uritools.urisplit(uri)
+            if not parts.path:
                 return self._browse_root()
-            elif identifier in self._config['collections']:
-                return self._browse_collection(identifier)
+            elif parts.userinfo:
+                return self._browse_bookmarks(parts.userinfo)
+            elif parts.path in self._config['collections']:
+                return self._browse_collection(parts.path)
             else:
-                return self._browse_item(identifier)
+                return self._browse_item(parts.path)
         except Exception as e:
             logger.error('Error browsing %s: %s', uri, e)
             return []
@@ -205,15 +221,15 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_root(self):
+        logger.info('browse root')
         collections = self._config['collections']
-        result = self.backend.client.search(
+        refs = [self._bookmarks] if self._bookmarks else []
+        docs = {doc['identifier']: doc for doc in self.backend.client.search(
             _query(identifier=collections, mediatype='collection'),
             fields=['identifier', 'title', 'mediatype'],
             rows=len(collections)
-        )
+        )}
         # return in same order as listed in config
-        docs = {doc['identifier']: doc for doc in result}
-        refs = []
         for id in collections:
             if id in docs:
                 refs.append(_ref(docs[id]))
@@ -222,14 +238,17 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return refs
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
+    def _browse_bookmarks(self, username):
+        return map(_ref, self.backend.client.bookmarks(username))
+
+    @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_collection(self, identifier):
-        result = self.backend.client.search(
+        return map(_ref, self.backend.client.search(
             _query(collection=identifier, **self._search_filter),
             fields=['identifier', 'title', 'mediatype'],
             sort=self._config['browse_order'],
             rows=self._config['browse_limit']
-        )
-        return map(_ref, result)
+        ))
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_item(self, identifier):
@@ -267,5 +286,5 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=self._config['search_order'],
             rows=self._config['search_limit']
         )
-        uri = uritools.uricompose(Extension.ext_name, query=result.query)
+        uri = uritools.uricompose(SCHEME, query=result.query)
         return SearchResult(uri=uri, albums=[_album(doc) for doc in result])

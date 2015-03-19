@@ -91,7 +91,8 @@ If you have an Internet Archive account - also termed a `Virtual
 Library Card`_ - you can access your `Archive Bookmarks`_ from Mopidy.
 To do so, you need to add your Internet Archive user name to Mopidy's
 configuration as :confval:`internetarchive/username`.  Your bookmarks
-will then appear as individual Mopidy *playlists*.
+will then appear in the top-level browse directory as *Archive
+Bookmarks*.
 
 .. note::
 

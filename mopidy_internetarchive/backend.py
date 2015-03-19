@@ -9,7 +9,6 @@ from . import Extension
 from .client import InternetArchiveClient
 from .library import InternetArchiveLibraryProvider
 from .playback import InternetArchivePlaybackProvider
-from .playlists import InternetArchivePlaylistsProvider
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +26,3 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
         )
         self.library = InternetArchiveLibraryProvider(config, self)
         self.playback = InternetArchivePlaybackProvider(audio, self)
-        self.playlists = InternetArchivePlaylistsProvider(config, self)
-
-    def on_start(self):
-        self.playlists.start()
-
-    def on_stop(self):
-        self.playlists.stop()
