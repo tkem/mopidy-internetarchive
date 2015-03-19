@@ -1,3 +1,11 @@
+1.2.0 2015-03-19
+----------------
+
+- Remove playlists provider.
+
+- Add bookmarks to root directory for browsing.
+
+
 1.1.0 2014-11-19
 ----------------
 
