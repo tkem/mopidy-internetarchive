@@ -179,13 +179,11 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return self.find_exact(query, uris)
         try:
             terms = []
-            for field, value in (query.iteritems() if query else []):
+            for field, values in (query.iteritems() if query else []):
                 if field not in QUERY_MAPPING:
                     return None  # no result if unmapped field
-                elif isinstance(value, basestring):
-                    terms.append((QUERY_MAPPING[field], value))
                 else:
-                    terms.extend((QUERY_MAPPING[field], v) for v in value)
+                    terms.extend((QUERY_MAPPING[field], v) for v in values)
             if uris:
                 urisplit = uritools.urisplit
                 ids = filter(None, (urisplit(uri).path for uri in uris))
@@ -198,13 +196,11 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def find_exact(self, query=None, uris=None):
         try:
             terms = []
-            for field, value in (query.iteritems() if query else []):
+            for field, values in (query.iteritems() if query else []):
                 if field not in QUERY_MAPPING:
                     return None  # no result if unmapped field
-                elif isinstance(value, basestring):
-                    terms.append((QUERY_MAPPING[field], value))
                 else:
-                    terms.extend((QUERY_MAPPING[field], v) for v in value)
+                    terms.extend((QUERY_MAPPING[field], v) for v in values)
             if uris:
                 urisplit = uritools.urisplit
                 ids = filter(None, (urisplit(uri).path for uri in uris))
