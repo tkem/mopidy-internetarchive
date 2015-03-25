@@ -4,7 +4,7 @@ import os
 
 from mopidy import config, ext
 
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 SORT_FIELDS = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
     'addeddate',

@@ -1,3 +1,11 @@
+1.2.1 2015-03-25
+----------------
+
+- Remove search query normalization.
+
+- Prepare for Mopidy v1.0 exact search API.
+
+
 1.2.0 2015-03-19
 ----------------
 
