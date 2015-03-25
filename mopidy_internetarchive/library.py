@@ -174,7 +174,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             logger.error('Error browsing %s: %s', uri, e)
             return []
 
-    def search(self, query=None, uris=None):
+    def search(self, query=None, uris=None, exact=False):
+        if exact:
+            return self.find_exact(query, uris)
         try:
             terms = []
             for field, value in (query.iteritems() if query else []):
