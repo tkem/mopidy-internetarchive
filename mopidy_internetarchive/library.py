@@ -11,7 +11,6 @@ from mopidy import backend, models
 import uritools
 
 from . import Extension, translator
-from .query import Query
 
 SCHEME = Extension.ext_name
 
@@ -77,20 +76,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         self._cache = _cache(**ext_config)
         self._tracks = {}  # track cache for faster lookup
 
-    def lookup(self, uri):
-        try:
-            return [self._tracks[uri]]
-        except KeyError:
-            logger.debug("track lookup cache miss %r", uri)
-        try:
-            _, _, identifier, _, filename = uritools.urisplit(uri)
-            tracks = self._lookup(identifier)
-            self._tracks = trackmap = {t.uri: t for t in tracks}
-            return [trackmap[uri]] if filename else tracks
-        except Exception as e:
-            logger.error('Lookup failed for %s: %s', uri, e)
-            return []
-
     def browse(self, uri):
         logger.info('browse %r', uri)
         try:
@@ -107,9 +92,27 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             logger.error('Error browsing %s: %s', uri, e)
             return []
 
+    def lookup(self, uri):
+        try:
+            return [self._tracks[uri]]
+        except KeyError:
+            logger.debug("track lookup cache miss %r", uri)
+        try:
+            _, _, identifier, _, filename = uritools.urisplit(uri)
+            tracks = self._lookup(identifier)
+            self._tracks = trackmap = {t.uri: t for t in tracks}
+            return [trackmap[uri]] if filename else tracks
+        except Exception as e:
+            logger.error('Lookup failed for %s: %s', uri, e)
+            return []
+
+    def refresh(self, uri=None):
+        self._cache.clear()
+        self._tracks.clear()
+
     def search(self, query=None, uris=None, exact=False):
         if exact:
-            return self.find_exact(query, uris)
+            return None  # exact queries not supported
         try:
             terms = []
             for field, values in (query.iteritems() if query else []):
@@ -125,30 +128,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
-
-    def find_exact(self, query=None, uris=None):
-        try:
-            terms = []
-            for field, values in (query.iteritems() if query else []):
-                if field not in QUERY_MAPPING:
-                    return None  # no result if unmapped field
-                else:
-                    terms.extend((QUERY_MAPPING[field], v) for v in values)
-            if uris:
-                urisplit = uritools.urisplit
-                ids = filter(None, (urisplit(uri).path for uri in uris))
-                terms.append(('collection', tuple(ids)))
-            result = self._search(*terms)
-            albums = filter(Query(query, True).match_album, result.albums)
-            return result.copy(albums=albums)
-        except Exception as e:
-            logger.error('Error searching the Internet Archive: %s', e)
-            return None
-
-    def refresh(self, uri=None):
-        logger.info('Clearing Internet Archive cache')
-        self._cache.clear()
-        self._tracks.clear()
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_root(self):
