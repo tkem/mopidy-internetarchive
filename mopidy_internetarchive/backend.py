@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 import logging
-import pykka
 
 from mopidy import backend
+
+import pykka
 
 from . import Extension
 from .client import InternetArchiveClient

@@ -1,23 +1,19 @@
 from __future__ import unicode_literals
 
-import cachetools
 import collections
-import itertools
 import logging
 import operator
+
+import cachetools
+
+from mopidy import backend, models
+
 import uritools
-import re
 
-from mopidy import backend
-from mopidy.models import Album, Track, SearchResult, Ref
-
-from . import Extension
-from .parsing import *  # noqa
+from . import Extension, translator
 from .query import Query
 
 SCHEME = Extension.ext_name
-
-QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
 QUERY_MAPPING = {
     'any': None,
@@ -38,7 +34,7 @@ def _bookmarks(config):
         host=uritools.urisplit(config['base_url']).host,
         path='/bookmarks/'
     )
-    return Ref.directory(name='Archive Bookmarks', uri=uri)
+    return models.Ref.directory(name='Archive Bookmarks', uri=uri)
 
 
 def _cache(cache_size=None, cache_ttl=None, **kwargs):
@@ -49,43 +45,6 @@ def _cache(cache_size=None, cache_ttl=None, **kwargs):
         return cachetools.LRUCache(cache_size)
     else:
         return cachetools.TTLCache(cache_size, cache_ttl)
-
-
-def _ref(metadata):
-    identifier = metadata['identifier']
-    uri = uritools.uricompose(SCHEME, path=identifier)
-    name = metadata.get('title', identifier)
-    if metadata.get('mediatype', 'collection') == 'collection':
-        return Ref.directory(uri=uri, name=name)
-    else:
-        return Ref.album(uri=uri, name=name)
-
-
-def _album(metadata, images=[]):
-    identifier = metadata['identifier']
-    uri = uritools.uricompose(SCHEME, path=identifier)
-    name = metadata.get('title', identifier)
-    artists = parse_creator(metadata.get('creator'))
-    date = parse_date(metadata.get('date'))
-    return Album(uri=uri, name=name, artists=artists, date=date, images=images)
-
-
-def _track(metadata, file, album):
-    identifier = metadata['identifier']
-    filename = file['name']
-    uri = uritools.uricompose(SCHEME, path=identifier, fragment=filename)
-    name = file.get('title', filename)
-    return Track(
-        uri=uri,
-        name=name,
-        album=album,
-        artists=album.artists,
-        track_no=parse_track(file.get('track')),
-        date=parse_date(file.get('date'), album.date),
-        length=parse_length(file.get('length')),
-        bitrate=parse_bitrate(file.get('bitrate')),
-        last_modified=parse_mtime(file.get('mtime'))
-    )
 
 
 def _trackkey(track):
@@ -99,35 +58,9 @@ def _find(mapping, keys, default=None):
     return default
 
 
-def _quote(term):
-    term = QUERY_CHAR_RE.sub(r'\\\1', term)
-    # only quote if term contains whitespace, since date:"2014-01-01"
-    # will raise an error
-    if any(c.isspace() for c in term):
-        term = '"' + term + '"'
-    return term
-
-
-def _query(*args, **kwargs):
-    terms = []
-    for field, value in itertools.chain(args, kwargs.items()):
-        if not value:
-            continue
-        elif isinstance(value, basestring):
-            values = [_quote(value)]
-        else:
-            values = [_quote(v) for v in value]
-        if len(values) == 1:
-            term = values[0]
-        else:
-            term = '(%s)' % ' OR '.join(values)
-        terms.append(field + ':' + term if field else term)
-    return ' AND '.join(terms)
-
-
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
-    root_directory = Ref.directory(
+    root_directory = models.Ref.directory(
         uri=uritools.uricompose(SCHEME),
         name='Internet Archive'
     )
@@ -223,26 +156,26 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         collections = self._config['collections']
         refs = [self._bookmarks] if self._bookmarks else []
         docs = {doc['identifier']: doc for doc in self.backend.client.search(
-            _query(identifier=collections, mediatype='collection'),
+            translator.query(identifier=collections, mediatype='collection'),
             fields=['identifier', 'title', 'mediatype'],
             rows=len(collections)
         )}
         # return in same order as listed in config
         for id in collections:
             if id in docs:
-                refs.append(_ref(docs[id]))
+                refs.append(translator.ref(docs[id]))
             else:
                 logger.warn('Internet Archive collection "%s" not found', id)
         return refs
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_bookmarks(self, username):
-        return map(_ref, self.backend.client.bookmarks(username))
+        return map(translator.ref, self.backend.client.bookmarks(username))
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _browse_collection(self, identifier):
-        return map(_ref, self.backend.client.search(
-            _query(collection=identifier, **self._search_filter),
+        return map(translator.ref, self.backend.client.search(
+            translator.query(collection=identifier, **self._search_filter),
             fields=['identifier', 'title', 'mediatype'],
             sort=self._config['browse_order'],
             rows=self._config['browse_limit']
@@ -252,7 +185,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def _browse_item(self, identifier):
         tracks = self._lookup(identifier)
         self._tracks = {t.uri: t for t in tracks}  # cache tracks
-        return [Ref.track(uri=t.uri, name=t.name) for t in tracks]
+        return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _lookup(self, identifier):
@@ -269,20 +202,21 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         images = []
         for file in _find(files, self._config['image_formats'], {}).values():
             images.append(client.geturl(identifier, file['name']))
-        album = _album(item['metadata'], images)
+        album = translator.album(item['metadata'], images)
         tracks = []
         for file in _find(files, self._config['audio_formats'], {}).values():
-            tracks.append(_track(item['metadata'], file, album))
+            tracks.append(translator.track(item['metadata'], file, album))
         tracks.sort(key=_trackkey)
         return tracks
 
     @cachetools.cachedmethod(operator.attrgetter('_cache'))
     def _search(self, *terms):
         result = self.backend.client.search(
-            _query(*terms, **self._search_filter),
+            translator.query(*terms, **self._search_filter),
             fields=['identifier', 'title', 'creator', 'date'],
             sort=self._config['search_order'],
             rows=self._config['search_limit']
         )
         uri = uritools.uricompose(SCHEME, query=result.query)
-        return SearchResult(uri=uri, albums=[_album(doc) for doc in result])
+        albums = [translator.album(doc) for doc in result]
+        return models.SearchResult(uri=uri, albums=albums)

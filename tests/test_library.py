@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
 import unittest
-import pykka
+
+from mopidy import core
 
 from mopidy_internetarchive.backend import InternetArchiveBackend
-from mopidy import core
+
+import pykka
 
 TEST_ARTIST = 'Martin Luther King'
 TEST_ALBUM = 'I Have a Dream'

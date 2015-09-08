@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 import unittest
 
-from mopidy.models import Artist, Album, Track, Ref
+from mopidy.models import Album, Artist, Ref, Track
+
 from mopidy_internetarchive.query import Query
 
 

@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import collections
 
-from mopidy.models import Artist, Album, Track
+from mopidy.models import Album, Artist, Track
 
 QUERY_FIELDS = {
     'uri',
