@@ -101,12 +101,13 @@ def ref(metadata):
     identifier = metadata['identifier']
     name = metadata.get('title', identifier)
     uri = uritools.uricompose(SCHEME, path=identifier)
-    if metadata.get('mediatype', 'collection') == 'collection':
-        return models.Ref.directory(uri=uri, name=name)
-    elif name == metadata.get('creator', None):
+
+    if metadata.get('mediatype', 'collection') != 'collection':
+        return models.Ref.album(uri=uri, name=name)
+    elif name in metadata.get('creator', []):
         return models.Ref.artist(uri=uri, name=name)
     else:
-        return models.Ref.album(uri=uri, name=name)
+        return models.Ref.directory(uri=uri, name=name)
 
 
 def album(metadata, images=[]):

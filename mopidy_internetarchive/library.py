@@ -134,7 +134,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         refs = [self.__bookmarks] if self.__bookmarks else []
         docs = {doc['identifier']: doc for doc in self.backend.client.search(
             translator.query(identifier=collections, mediatype='collection'),
-            fields=['identifier', 'title', 'mediatype'],
+            fields=['identifier', 'title', 'mediatype', 'creator'],
             rows=len(collections)
         )}
         # return in same order as listed in config
@@ -151,7 +151,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def __browse_collection(self, identifier):
         return map(translator.ref, self.backend.client.search(
             translator.query(collection=identifier, **self.__search_filter),
-            fields=['identifier', 'title', 'mediatype'],
+            fields=['identifier', 'title', 'mediatype', 'creator'],
             sort=self.__config['browse_order'],
             rows=self.__config['browse_limit']
         ))
