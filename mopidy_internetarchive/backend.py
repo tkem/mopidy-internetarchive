@@ -2,7 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 
-from mopidy import backend
+from mopidy import backend, httpclient
 
 import pykka
 
@@ -25,5 +25,9 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
             retries=config[Extension.ext_name]['retries'],
             timeout=config[Extension.ext_name]['timeout']
         )
+        proxy = httpclient.format_proxy(config['proxy'])
+        self.client.proxies.update({'http': proxy, 'https': proxy})
+        agent = '%s/%s' % (Extension.dist_name, Extension.version)
+        self.client.useragent = httpclient.format_user_agent(agent)
         self.library = InternetArchiveLibraryProvider(config, self)
         self.playback = InternetArchivePlaybackProvider(audio, self)

@@ -22,6 +22,18 @@ class InternetArchiveClient(object):
         self.timeout = timeout
         self.session = requests.Session()
 
+    @property
+    def proxies(self):
+        return self.session.proxies
+
+    @property
+    def useragent(self):
+        return self.session.headers.get('User-Agent')
+
+    @useragent.setter
+    def useragent(self, value):
+        self.session.headers['User-Agent'] = value
+
     def search(self, query, fields=None, sort=None, rows=None, start=None):
         response = self._get('/advancedsearch.php', params={
             'q': query,

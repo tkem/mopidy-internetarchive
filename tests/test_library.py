@@ -31,6 +31,8 @@ class LibraryTest(unittest.TestCase):
             'cache_ttl': None,
             'retries': 0,
             'timeout': None
+        },
+        'proxy': {
         }
     }
 
