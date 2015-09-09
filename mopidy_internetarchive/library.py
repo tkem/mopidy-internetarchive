@@ -66,49 +66,48 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def __init__(self, config, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
-        self._config = ext_config = config[Extension.ext_name]
-        self._search_filter = {
+        self.__config = ext_config = config[Extension.ext_name]
+        self.__search_filter = {
             'format': ext_config['audio_formats'],
             '-collection': ext_config['exclude_collections'],
             '-mediatype': ext_config['exclude_mediatypes']
         }
-        self._bookmarks = _bookmarks(ext_config)
-        self._cache = _cache(**ext_config)
-        self._tracks = {}  # track cache for faster lookup
+        self.__bookmarks = _bookmarks(ext_config)
+        self.__cache = _cache(**ext_config)
+        self.__tracks = {}  # track cache for faster lookup
 
     def browse(self, uri):
-        logger.info('browse %r', uri)
         try:
             parts = uritools.urisplit(uri)
             if not parts.path:
-                return self._browse_root()
+                return self.__browse_root()
             elif parts.userinfo:
-                return self._browse_bookmarks(parts.userinfo)
-            elif parts.path in self._config['collections']:
-                return self._browse_collection(parts.path)
+                return self.__browse_bookmarks(parts.userinfo)
+            elif parts.path in self.__config['collections']:
+                return self.__browse_collection(parts.path)
             else:
-                return self._browse_item(parts.path)
+                return self.__browse_item(parts.path)
         except Exception as e:
             logger.error('Error browsing %s: %s', uri, e)
             return []
 
     def lookup(self, uri):
         try:
-            return [self._tracks[uri]]
+            return [self.__tracks[uri]]
         except KeyError:
             logger.debug("track lookup cache miss %r", uri)
         try:
             _, _, identifier, _, filename = uritools.urisplit(uri)
-            tracks = self._lookup(identifier)
-            self._tracks = trackmap = {t.uri: t for t in tracks}
+            tracks = self.__lookup(identifier)
+            self.__tracks = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
         except Exception as e:
             logger.error('Lookup failed for %s: %s', uri, e)
             return []
 
     def refresh(self, uri=None):
-        self._cache.clear()
-        self._tracks.clear()
+        self.__cache.clear()
+        self.__tracks.clear()
 
     def search(self, query=None, uris=None, exact=False):
         if exact:
@@ -119,21 +118,20 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 if field not in QUERY_MAPPING:
                     return None  # no result if unmapped field
                 else:
+
                     terms.extend((QUERY_MAPPING[field], v) for v in values)
             if uris:
                 urisplit = uritools.urisplit
                 ids = filter(None, (urisplit(uri).path for uri in uris))
                 terms.append(('collection', tuple(ids)))
-            return self._search(*terms)
+            return self.__search(*terms)
         except Exception as e:
             logger.error('Error searching the Internet Archive: %s', e)
             return None
 
-    @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _browse_root(self):
-        logger.info('browse root')
-        collections = self._config['collections']
-        refs = [self._bookmarks] if self._bookmarks else []
+    def __browse_root(self):
+        collections = self.__config['collections']
+        refs = [self.__bookmarks] if self.__bookmarks else []
         docs = {doc['identifier']: doc for doc in self.backend.client.search(
             translator.query(identifier=collections, mediatype='collection'),
             fields=['identifier', 'title', 'mediatype'],
@@ -147,29 +145,24 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 logger.warn('Internet Archive collection "%s" not found', id)
         return refs
 
-    @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _browse_bookmarks(self, username):
+    def __browse_bookmarks(self, username):
         return map(translator.ref, self.backend.client.bookmarks(username))
 
-    @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _browse_collection(self, identifier):
+    def __browse_collection(self, identifier):
         return map(translator.ref, self.backend.client.search(
-            translator.query(collection=identifier, **self._search_filter),
+            translator.query(collection=identifier, **self.__search_filter),
             fields=['identifier', 'title', 'mediatype'],
-            sort=self._config['browse_order'],
-            rows=self._config['browse_limit']
+            sort=self.__config['browse_order'],
+            rows=self.__config['browse_limit']
         ))
 
-    @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _browse_item(self, identifier):
-        tracks = self._lookup(identifier)
-        self._tracks = {t.uri: t for t in tracks}  # cache tracks
+    def __browse_item(self, identifier):
+        tracks = self.__lookup(identifier)
+        self.__tracks = {t.uri: t for t in tracks}  # cache tracks
         return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
 
-    @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _lookup(self, identifier):
-        client = self.backend.client
-        item = client.metadata(identifier)
+    def __lookup(self, identifier):
+        item = self.__getitem(identifier)
         files = collections.defaultdict(dict)
         # HACK: not all files have "mtime", but reverse-sorting on
         # filename tends to preserve "l(e)ast derived" versions,
@@ -179,23 +172,26 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             original = str(file.get('original', file['name']))
             files[file['format']][original] = file
         images = []
-        for file in _find(files, self._config['image_formats'], {}).values():
-            images.append(client.geturl(identifier, file['name']))
+        for file in _find(files, self.__config['image_formats'], {}).values():
+            images.append(self.backend.client.geturl(identifier, file['name']))
         album = translator.album(item['metadata'], images)
         tracks = []
-        for file in _find(files, self._config['audio_formats'], {}).values():
+        for file in _find(files, self.__config['audio_formats'], {}).values():
             tracks.append(translator.track(item['metadata'], file, album))
         tracks.sort(key=_trackkey)
         return tracks
 
-    @cachetools.cachedmethod(operator.attrgetter('_cache'))
-    def _search(self, *terms):
+    def __search(self, *terms):
         result = self.backend.client.search(
-            translator.query(*terms, **self._search_filter),
+            translator.query(*terms, **self.__search_filter),
             fields=['identifier', 'title', 'creator', 'date'],
-            sort=self._config['search_order'],
-            rows=self._config['search_limit']
+            sort=self.__config['search_order'],
+            rows=self.__config['search_limit']
         )
         uri = uritools.uricompose(SCHEME, query=result.query)
         albums = [translator.album(doc) for doc in result]
         return models.SearchResult(uri=uri, albums=albums)
+
+    @cachetools.cachedmethod(lambda self: self.__cache)
+    def __getitem(self, identifier):
+        return self.backend.client.metadata(identifier)
