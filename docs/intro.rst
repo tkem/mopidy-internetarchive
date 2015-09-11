@@ -59,7 +59,7 @@ within these.
 
 For practical and performance reasons, the number of audio items that
 will be shown within a collection is limited, e.g. you will not see
-all 132,887 items of the Live Music Archive [#footnote2]_.  The
+all 144,957 items of the Live Music Archive [#footnote2]_.  The
 :ref:`default configuration <defconf>` sets this limit to 100, but
 this can be changed with :confval:`internetarchive/browse_limit`.
 Items are selected based on popularity by default, i.e. the 100 most
@@ -122,4 +122,4 @@ Bookmarks*.
 
 .. [#footnote1] If you *really* don't like the Grateful Dead, for example.
 
-.. [#footnote2] As of 2014-09-26.
+.. [#footnote2] As of 2015-09-11.

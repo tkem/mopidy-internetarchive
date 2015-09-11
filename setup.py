@@ -8,7 +8,7 @@ from setuptools import find_packages, setup
 def get_version(filename):
     with open(filename) as fh:
         metadata = dict(re.findall("__([a-z]+)__ = '([^']+)'", fh.read()))
-        return metadata['version']
+    return metadata['version']
 
 setup(
     name='Mopidy-InternetArchive',
@@ -17,7 +17,9 @@ setup(
     license='Apache License, Version 2.0',
     author='Thomas Kemmer',
     author_email='tkemmer@computer.org',
-    description='Mopidy extension for playing music and audio from the Internet Archive',  # noqa
+    description=(
+        'Mopidy extension for playing music from the Internet Archive'
+    ),
     long_description=open('README.rst').read(),
     packages=find_packages(exclude=['tests', 'tests.*']),
     zip_safe=False,
@@ -29,11 +31,6 @@ setup(
         'requests >= 2.0',
         'cachetools >= 1.0',
         'uritools >= 1.0'
-    ],
-    test_suite='nose.collector',
-    tests_require=[
-        'nose',
-        'mock >= 1.0',
     ],
     entry_points={
         'mopidy.ext': [

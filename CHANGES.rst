@@ -1,21 +1,35 @@
-1.2.1 2015-03-25
-----------------
+v1.3.0 (2015-09-11)
+-------------------
+
+- Require Mopidy >= 1.1.
+
+- Use Mopidy proxy settings and HTTP User-Agent.
+
+- Fix track bitrates represented in Kbit/s.
+
+- Drop exact search support.
+
+- Only cache items.
+
+
+v1.2.1 (2015-03-25)
+-------------------
 
 - Remove search query normalization.
 
 - Prepare for Mopidy v1.0 exact search API.
 
 
-1.2.0 2015-03-19
-----------------
+v1.2.0 (2015-03-19)
+-------------------
 
 - Remove playlists provider.
 
 - Add bookmarks to root directory for browsing.
 
 
-1.1.0 2014-11-19
-----------------
+v1.1.0 (2014-11-19)
+-------------------
 
 - Load bookmarks as individual playlists.
 
@@ -26,16 +40,16 @@
 - Add HTTP connection retries.
 
 
-1.0.3 2014-11-14
-----------------
+v1.0.3 (2014-11-14)
+-------------------
 
 - Fix handling of re-derived VBR MP3 files.
 
 - Remove Ogg Vorbis from default audio formats.
 
 
-1.0.2 2014-11-07
-----------------
+v1.0.2 (2014-11-07)
+-------------------
 
 - Update dependencies.
 
@@ -48,21 +62,21 @@
 - Temporarily disable VBR MP3 and track comments.
 
 
-1.0.1 2014-09-29
-----------------
+v1.0.1 (2014-09-29)
+-------------------
 
 - Add item descriptions as track comments.
 
 - Filter search results for exact queries.
 
 
-1.0.0 2014-09-26
-----------------
+v1.0.0 (2014-09-26)
+-------------------
 
 - Major rewrite for version 1.0.0.
 
 
-0.5.0 2014-02-28
+v0.5.0 (2014-02-28)
 ----------------
 
 - Update `README` with link to documentation.
@@ -72,8 +86,8 @@
 - Allow empty queries for searching.
 
 
-0.4.0 2014-02-25
-----------------
+v0.4.0 (2014-02-25)
+-------------------
 
 - Various performance and stability improvements.
 
@@ -82,14 +96,14 @@
 - Add image URLs to albums.
 
 
-0.3.1 2014-02-21
-----------------
+v0.3.1 (2014-02-21)
+-------------------
 
 - Fix default configuration.
 
 
-0.3.0 2014-02-21
-----------------
+v0.3.0 (2014-02-21)
+-------------------
 
 - Add bookmark browsing support.
 
@@ -98,8 +112,8 @@
 - Stability and performance improvements.
 
 
-0.2.0 2014-01-31
-----------------
+v0.2.0 (2014-01-31)
+-------------------
 
 - Add library browsing support.
 
@@ -108,7 +122,7 @@
 - Properly quote/encode query terms.
 
 
-0.1.0 2014-01-24
-----------------
+v0.1.0 (2014-01-24)
+-------------------
 
 - Initial release.

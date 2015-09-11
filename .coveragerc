@@ -1,8 +1,2 @@
-[report]
-omit =
-    */pyshared/*
-    */python?.?/*
-    */site-packages/nose/*
-    */mopidy/*
-    */cachetools/*
-    */uritools/*
+[run]
+source = mopidy_internetarchive

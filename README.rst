@@ -1,8 +1,8 @@
 Mopidy-InternetArchive
 ========================================================================
 
-Mopidy-InternetArchive is a Mopidy_ extension for playing music and
-audio from the `Internet Archive`_.
+Mopidy-InternetArchive is a Mopidy_ extension for playing music from
+the `Internet Archive`_.
 
 
 Installation

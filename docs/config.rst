@@ -86,7 +86,7 @@ Configuration Values
 
 .. confval:: internetarchive/cache_size
 
-   The number of items and search results to cache.
+   The number of Internet Archive items to cache in memory.
 
 .. confval:: internetarchive/cache_ttl
 
