@@ -21,8 +21,8 @@ class TranslatorTest(unittest.TestCase):
         self.assertEqual(translator.parse_bitrate('tmp', 42), 42)
 
         self.assertEqual(translator.parse_bitrate('0'), 0)
-        self.assertEqual(translator.parse_bitrate('1'), 1)
-        self.assertEqual(translator.parse_bitrate('42.123'), 42)
+        self.assertEqual(translator.parse_bitrate('1'), 1000)
+        self.assertEqual(translator.parse_bitrate('42.123'), 42123)
 
     def test_parse_date(self):
         self.assertEqual(translator.parse_date(None), None)

@@ -6,18 +6,7 @@ import re
 
 from mopidy import models
 
-import uritools
-
 from . import Extension
-
-__all__ = (
-    'parse_bitrate',
-    'parse_date',
-    'parse_length',
-    'parse_mtime',
-    'parse_track',
-    'parse_creator'
-)
 
 DURATION_RE = re.compile(r"""
 (?:
@@ -33,15 +22,13 @@ ISODATE_RE = re.compile(r"""
 (?:\-(\d{2}))?
 """, flags=re.VERBOSE)
 
-SCHEME = Extension.ext_name
-
 logger = logging.getLogger(__name__)
 
 
 def parse_bitrate(string, default=None):
     if string:
         try:
-            return int(float(string))
+            return int(float(string) * 1000)
         except:
             logger.warn('Invalid Internet Archive bitrate: %r', string)
     return default
@@ -94,42 +81,42 @@ def parse_creator(obj, default=None):
         return [models.Artist(name=name) for name in obj]
 
 
-def ref(metadata):
-    identifier = metadata['identifier']
-    name = metadata.get('title', identifier)
-    uri = uritools.uricompose(SCHEME, path=identifier)
+def ref(obj, scheme=Extension.ext_name):
+    identifier = obj['identifier']
+    name = obj.get('title', identifier)
+    uri = '%s:%s' % (scheme, identifier)
 
-    if metadata.get('mediatype', 'collection') != 'collection':
+    if obj.get('mediatype', 'collection') != 'collection':
         return models.Ref.album(uri=uri, name=name)
-    elif name in metadata.get('creator', []):
+    elif name in obj.get('creator', []):
         return models.Ref.artist(uri=uri, name=name)
     else:
         return models.Ref.directory(uri=uri, name=name)
 
 
-def album(metadata, images=[]):
-    identifier = metadata['identifier']
-    uri = uritools.uricompose(SCHEME, path=identifier)
-    name = metadata.get('title', identifier)
-    artists = parse_creator(metadata.get('creator'))
-    date = parse_date(metadata.get('date'))
+def album(obj, images=[], scheme=Extension.ext_name):
+    identifier = obj['identifier']
+    name = obj.get('title', identifier)
+    uri = '%s:%s' % (scheme, identifier)
+
     return models.Album(
         uri=uri,
         name=name,
-        artists=artists,
-        date=date,
+        artists=parse_creator(obj.get('creator')),
+        date=parse_date(obj.get('date')),
         images=images
     )
 
 
-def track(metadata, file, album):
-    identifier = metadata['identifier']
+def track(obj, file, album, scheme=Extension.ext_name):
+    identifier = obj['identifier']
     filename = file['name']
-    uri = uritools.uricompose(SCHEME, path=identifier, fragment=filename)
     name = file.get('title', filename)
+    uri = '%s:%s#%s' % (scheme, identifier, filename)
+
     return models.Track(
-        uri=uri,
         name=name,
+        uri=uri,
         album=album,
         artists=album.artists,
         track_no=parse_track(file.get('track')),
