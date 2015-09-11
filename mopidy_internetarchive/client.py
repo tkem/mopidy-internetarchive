@@ -1,15 +1,22 @@
 from __future__ import unicode_literals
 
 import collections
-import logging
+import operator
+import urlparse
+
+import cachetools
 
 import requests
 
-import uritools
-
 BASE_URL = 'http://archive.org/'
 
-logger = logging.getLogger(__name__)
+
+def _session(base_url, retries):
+    # TODO: backoff?
+    session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(max_retries=retries)
+    session.mount(base_url, adapter)
+    return session
 
 
 class InternetArchiveClient(object):
@@ -17,25 +24,60 @@ class InternetArchiveClient(object):
     pykka_traversable = True
 
     def __init__(self, base_url=BASE_URL, retries=0, timeout=None):
-        self.base_url = base_url
-        self.retries = retries
-        self.timeout = timeout
-        self.session = requests.Session()
+        self.__base_url = base_url
+        self.__session = _session(base_url, retries)
+        self.__timeout = timeout
+        self.cache = None  # public
+
+    def __fetch(self, path, params=None):
+        return self.__session.get(
+            urlparse.urljoin(self.__base_url, path),
+            params=params,
+            timeout=self.__timeout
+        )
 
     @property
     def proxies(self):
-        return self.session.proxies
+        return self.__session.proxies
 
     @property
     def useragent(self):
-        return self.session.headers.get('User-Agent')
+        return self.__session.headers.get('User-Agent')
 
     @useragent.setter
     def useragent(self, value):
-        self.session.headers['User-Agent'] = value
+        self.__session.headers['User-Agent'] = value
+
+    def bookmarks(self, username):
+        response = self.__fetch('/bookmarks/%s' % username, params={
+            'output': 'json'
+        })
+        # requests for non-existant users yield text/xml response
+        if response.headers.get('Content-Type') != 'application/json':
+            raise LookupError('Internet Archive user %s not found' % username)
+        return response.json()
+
+    @cachetools.cachedmethod(operator.attrgetter('cache'))
+    def getitem(self, identifier):
+        obj = self.__fetch('/metadata/%s' % identifier).json()
+        if not obj:
+            raise LookupError(identifier)
+        elif 'error' in obj:
+            raise LookupError(obj['error'])
+        elif 'result' in obj:
+            return obj['result']
+        else:
+            return obj
+
+    def geturl(self, identifier, filename=None):
+        if filename:
+            path = '/download/%s/%s' % (identifier, filename)
+        else:
+            path = '/download/%s' % identifier
+        return urlparse.urljoin(self.__base_url, path)
 
     def search(self, query, fields=None, sort=None, rows=None, start=None):
-        response = self._get('/advancedsearch.php', params={
+        response = self.__fetch('/advancedsearch.php', params={
             'q': query,
             'fl[]': fields,
             'sort[]': sort,
@@ -47,47 +89,6 @@ class InternetArchiveClient(object):
             return self.SearchResult(response.json())
         else:
             raise self.SearchError(response.url)
-
-    def metadata(self, identifier):
-        obj = self._get('/metadata/' + identifier).json()
-        if not obj:
-            raise LookupError('Internet Archive item %s not found' % identifier)  # noqa
-        elif 'error' in obj:
-            raise LookupError(obj['error'])
-        elif 'result' in obj:
-            return obj['result']
-        else:
-            return obj
-
-    def bookmarks(self, username):
-        response = self._get('/bookmarks/' + username, params={
-            'output': 'json'
-        })
-        # requests for non-existant users yield text/xml response
-        if response.headers.get('Content-Type') != 'application/json':
-            raise LookupError('Internet Archive user %s not found' % username)
-        return response.json()
-
-    def geturl(self, identifier, filename=None):
-        if filename:
-            path = identifier + '/' + uritools.uriencode(filename)
-        else:
-            path = identifier + '/'
-        return uritools.urijoin(self.base_url, '/download/' + path)
-
-    def _get(self, path, params=None):
-        url = uritools.urijoin(self.base_url, path)
-        retries = self.retries
-        timeout = self.timeout
-
-        while True:
-            try:
-                return self.session.get(url, params=params, timeout=timeout)
-            except requests.exceptions.ConnectionError as e:
-                if not retries:
-                    raise e
-                logger.warn('Error connecting to the Internet Archive: %s', e)
-                retries -= 1
 
     class SearchResult(collections.Sequence):
 
@@ -118,32 +119,26 @@ if __name__ == '__main__':
     parser.add_argument('arg', metavar='PATH | USER | QUERY')
     parser.add_argument('-b', '--bookmarks', action='store_true')
     parser.add_argument('-B', '--base-url', default='http://archive.org')
-    parser.add_argument('-d', '--debug', action='store_true')
     parser.add_argument('-e', '--encoding', default=sys.getdefaultencoding())
-    parser.add_argument('-F', '--fields', nargs='+')
+    parser.add_argument('-f', '--fields', nargs='+')
     parser.add_argument('-i', '--indent', type=int, default=2)
     parser.add_argument('-q', '--query', action='store_true')
     parser.add_argument('-r', '--rows', type=int)
     parser.add_argument('-R', '--retries', type=int, default=0)
-    parser.add_argument('-S', '--sort', nargs='+')
+    parser.add_argument('-s', '--sort', nargs='+')
     parser.add_argument('-t', '--timeout', type=float)
+    parser.add_argument('-v', '--verbose', action='store_true')
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.debug else logging.WARN)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARN)
 
-    client = InternetArchiveClient(
-        args.base_url,
-        retries=args.retries,
-        timeout=args.timeout
-    )
-
+    client = InternetArchiveClient(args.base_url, args.retries, args.timeout)
     if args.query:
         query = args.arg.decode(args.encoding)
         result = client.search(query, args.fields, args.sort, args.rows)
     elif args.bookmarks:
         result = client.bookmarks(args.arg)
     else:
-        result = client.metadata(args.arg)
-
+        result = client.getitem(args.arg)
     json.dump(result, sys.stdout, default=vars, indent=args.indent)
     sys.stdout.write('\n')

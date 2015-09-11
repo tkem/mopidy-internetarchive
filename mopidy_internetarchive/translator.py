@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import datetime
-import itertools
 import logging
 import re
 
@@ -33,8 +32,6 @@ ISODATE_RE = re.compile(r"""
 (?:\-(\d{2}))?
 (?:\-(\d{2}))?
 """, flags=re.VERBOSE)
-
-QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
 SCHEME = Extension.ext_name
 
@@ -141,29 +138,3 @@ def track(metadata, file, album):
         bitrate=parse_bitrate(file.get('bitrate')),
         last_modified=parse_mtime(file.get('mtime'))
     )
-
-
-def query(*args, **kwargs):
-    terms = []
-    for field, value in itertools.chain(args, kwargs.items()):
-        if not value:
-            continue
-        elif isinstance(value, basestring):
-            values = [_quote(value)]
-        else:
-            values = [_quote(v) for v in value]
-        if len(values) == 1:
-            term = values[0]
-        else:
-            term = '(%s)' % ' OR '.join(values)
-        terms.append(field + ':' + term if field else term)
-    return ' AND '.join(terms)
-
-
-def _quote(term):
-    term = QUERY_CHAR_RE.sub(r'\\\1', term)
-    # only quote if term contains whitespace, since date:"2014-01-01"
-    # will raise an error
-    if any(c.isspace() for c in term):
-        term = '"' + term + '"'
-    return term

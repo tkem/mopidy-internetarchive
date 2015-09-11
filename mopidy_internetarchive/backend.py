@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-import logging
+import cachetools
 
 from mopidy import backend, httpclient
 
@@ -11,7 +11,14 @@ from .client import InternetArchiveClient
 from .library import InternetArchiveLibraryProvider
 from .playback import InternetArchivePlaybackProvider
 
-logger = logging.getLogger(__name__)
+
+def _cache(cache_size=None, cache_ttl=None, **kwargs):
+    if cache_size is None:
+        return None
+    elif cache_ttl is None:
+        return cachetools.LRUCache(cache_size)
+    else:
+        return cachetools.TTLCache(cache_size, cache_ttl)
 
 
 class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
@@ -20,14 +27,17 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
 
     def __init__(self, config, audio):
         super(InternetArchiveBackend, self).__init__()
-        self.client = InternetArchiveClient(
+
+        self.client = client = InternetArchiveClient(
             config[Extension.ext_name]['base_url'],
             retries=config[Extension.ext_name]['retries'],
             timeout=config[Extension.ext_name]['timeout']
         )
+        product = '%s/%s' % (Extension.dist_name, Extension.version)
+        client.useragent = httpclient.format_user_agent(product)
         proxy = httpclient.format_proxy(config['proxy'])
-        self.client.proxies.update({'http': proxy, 'https': proxy})
-        agent = '%s/%s' % (Extension.dist_name, Extension.version)
-        self.client.useragent = httpclient.format_user_agent(agent)
+        client.proxies.update({'http': proxy, 'https': proxy})
+        client.cache = _cache(**config[Extension.ext_name])
+
         self.library = InternetArchiveLibraryProvider(config, self)
         self.playback = InternetArchivePlaybackProvider(audio, self)
