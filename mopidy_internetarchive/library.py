@@ -74,27 +74,12 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             '-collection': ext_config['exclude_collections'],
             '-mediatype': ext_config['exclude_mediatypes']
         }
-        # TODO: remove bookmarks, treat as normal collection
-        if ext_config['username']:
-            self.__bookmarks = models.Ref.directory(
-                name='Archive Bookmarks',
-                uri=uritools.uricompose(
-                    scheme=SCHEME,
-                    userinfo=ext_config['username'],
-                    host=uritools.urisplit(ext_config['base_url']).host,
-                    path='/bookmarks/'
-                )
-            )
-        else:
-            self.__bookmarks = None
         self.__tracks = {}  # track cache for faster lookup
 
     def browse(self, uri):
         parts = uritools.urisplit(uri)
         if not parts.path:
             return self.__browse_root()
-        elif parts.userinfo:
-            return self.__browse_bookmarks(parts.userinfo)
         elif parts.path in self.__config['collections']:
             return self.__browse_collection(parts.path)
         else:
@@ -144,7 +129,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def __browse_root(self):
         collections = self.__config['collections']
-        refs = [self.__bookmarks] if self.__bookmarks else []
+        refs = []
         objs = {obj['identifier']: obj for obj in self.backend.client.search(
             _query(identifier=collections, mediatype='collection'),
             fields=['identifier', 'title', 'mediatype', 'creator'],
@@ -157,9 +142,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             else:
                 logger.warn('Internet Archive collection "%s" not found', id)
         return refs
-
-    def __browse_bookmarks(self, username):
-        return map(translator.ref, self.backend.client.bookmarks(username))
 
     def __browse_collection(self, identifier):
         return map(translator.ref, self.backend.client.search(

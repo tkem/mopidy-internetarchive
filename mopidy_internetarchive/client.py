@@ -29,13 +29,6 @@ class InternetArchiveClient(object):
         self.__timeout = timeout
         self.cache = None  # public
 
-    def __fetch(self, path, params=None):
-        return self.__session.get(
-            urlparse.urljoin(self.__base_url, path),
-            params=params,
-            timeout=self.__timeout
-        )
-
     @property
     def proxies(self):
         return self.__session.proxies
@@ -48,18 +41,9 @@ class InternetArchiveClient(object):
     def useragent(self, value):
         self.__session.headers['User-Agent'] = value
 
-    def bookmarks(self, username):
-        response = self.__fetch('/bookmarks/%s' % username, params={
-            'output': 'json'
-        })
-        # requests for non-existant users yield text/xml response
-        if response.headers.get('Content-Type') != 'application/json':
-            raise LookupError('Internet Archive user %s not found' % username)
-        return response.json()
-
     @cachetools.cachedmethod(operator.attrgetter('cache'))
     def getitem(self, identifier):
-        obj = self.__fetch('/metadata/%s' % identifier).json()
+        obj = self.__get('/metadata/%s' % identifier).json()
         if not obj:
             raise LookupError(identifier)
         elif 'error' in obj:
@@ -77,7 +61,7 @@ class InternetArchiveClient(object):
         return urlparse.urljoin(self.__base_url, path)
 
     def search(self, query, fields=None, sort=None, rows=None, start=None):
-        response = self.__fetch('/advancedsearch.php', params={
+        response = self.__get('/advancedsearch.php', params={
             'q': query,
             'fl[]': fields,
             'sort[]': sort,
@@ -89,6 +73,13 @@ class InternetArchiveClient(object):
             return self.SearchResult(response.json())
         else:
             raise self.SearchError(response.url)
+
+    def __get(self, path, params=None):
+        return self.__session.get(
+            urlparse.urljoin(self.__base_url, path),
+            params=params,
+            timeout=self.__timeout
+        )
 
     class SearchResult(collections.Sequence):
 
@@ -117,7 +108,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('arg', metavar='PATH | USER | QUERY')
-    parser.add_argument('-b', '--bookmarks', action='store_true')
     parser.add_argument('-B', '--base-url', default='http://archive.org')
     parser.add_argument('-e', '--encoding', default=sys.getdefaultencoding())
     parser.add_argument('-f', '--fields', nargs='+')
@@ -136,8 +126,6 @@ if __name__ == '__main__':
     if args.query:
         query = args.arg.decode(args.encoding)
         result = client.search(query, args.fields, args.sort, args.rows)
-    elif args.bookmarks:
-        result = client.bookmarks(args.arg)
     else:
         result = client.getitem(args.arg)
     json.dump(result, sys.stdout, default=vars, indent=args.indent)

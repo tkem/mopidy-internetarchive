@@ -45,7 +45,6 @@ class Extension(ext.Extension):
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
         schema['base_url'] = config.String()
-        schema['username'] = config.String(optional=True)
         schema['collections'] = config.List()
         schema['audio_formats'] = config.List()
         schema['image_formats'] = config.List()
@@ -59,6 +58,8 @@ class Extension(ext.Extension):
         schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
         schema['retries'] = config.Integer(minimum=0)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
+        # these are no longer used
+        schema['username'] = config.Deprecated()
         return schema
 
     def setup(self, registry):
