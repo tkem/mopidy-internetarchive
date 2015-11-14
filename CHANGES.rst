@@ -1,3 +1,9 @@
+v2.0.0 (UNRELEASED)
+-------------------
+
+- Drop special handling of bookmarks.
+
+
 v1.3.0 (2015-09-11)
 -------------------
 
