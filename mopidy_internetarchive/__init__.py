@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import collections
 import os
 
 from mopidy import config, ext
@@ -33,6 +34,28 @@ SORT_FIELDS = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
 )]
 
 
+class Mapping(config.ConfigValue):
+
+    def __init__(self, keys=config.String(), values=config.String(), delim='|',
+                 optional=False):
+        self.__keys = keys
+        self.__values = values
+        self.__delim = delim
+        self.__optional = optional
+
+    def deserialize(self, value):
+        dict = collections.OrderedDict()
+        for s in config.List(optional=self.__optional).deserialize(value):
+            parts = s.partition(self.__delim)
+            key = self.__keys.deserialize(parts[0])
+            val = self.__values.deserialize(parts[2])
+            dict[key] = val
+        return dict
+
+    def serialize(self, value, display=False):
+        raise NotImplementedError
+
+
 class Extension(ext.Extension):
 
     dist_name = 'Mopidy-InternetArchive'
@@ -49,7 +72,7 @@ class Extension(ext.Extension):
         schema['audio_formats'] = config.List()
         schema['image_formats'] = config.List()
         schema['browse_limit'] = config.Integer(minimum=1, optional=True)
-        schema['browse_order'] = config.String(choices=SORT_FIELDS, optional=True)  # noqa
+        schema['browse_views'] = Mapping(keys=config.String(choices=SORT_FIELDS))  # noqa
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
         schema['search_order'] = config.String(choices=SORT_FIELDS, optional=True)  # noqa
         schema['exclude_collections'] = config.List(optional=True)
@@ -58,7 +81,8 @@ class Extension(ext.Extension):
         schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
         schema['retries'] = config.Integer(minimum=0)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
-        # these are no longer used
+        # no longer used
+        schema['browse_order'] = config.Deprecated()
         schema['username'] = config.Deprecated()
         return schema
 

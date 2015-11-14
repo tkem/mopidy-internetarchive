@@ -21,8 +21,6 @@ QUERY_MAPPING = {
     'date': 'date'
 }
 
-SCHEME = Extension.ext_name
-
 logger = logging.getLogger(__name__)
 
 
@@ -59,10 +57,14 @@ def _quote(term):
     return term
 
 
+def _trackref(track):
+    return models.Ref.track(name=track.name, uri=track.uri)
+
+
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     root_directory = models.Ref.directory(
-        uri=uritools.uricompose(SCHEME),
+        uri=uritools.uricompose(Extension.ext_name),
         name='Internet Archive'
     )
 
@@ -78,12 +80,12 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def browse(self, uri):
         parts = uritools.urisplit(uri)
-        if not parts.path:
-            return self.__browse_root()
-        elif parts.path in self.__config['collections']:
-            return self.__browse_collection(parts.path)
+        if parts.query:
+            return self.__browse_collection(parts.path, **parts.getquerydict())
+        elif parts.path:
+            return self.__browse_item(self.backend.client.getitem(parts.path))
         else:
-            return self.__browse_item(parts.path)
+            return self.__browse_root()
 
     def lookup(self, uri):
         try:
@@ -92,7 +94,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             logger.debug("track lookup cache miss for %r", uri)
         try:
             _, _, identifier, _, filename = uritools.urisplit(uri)
-            tracks = self.__lookup(identifier)
+            tracks = self.__gettracks(self.backend.client.getitem(identifier))
             self.__tracks = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
         except Exception as e:
@@ -123,56 +125,75 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             rows=self.__config['search_limit']
         )
         return models.SearchResult(
-            uri=uritools.uricompose(SCHEME, query=result.query),
+            uri=uritools.uricompose(Extension.ext_name, query=result.query),
             albums=map(translator.album, result)
         )
 
+    def __browse_collection(self, identifier, sort=['downloads desc']):
+        return map(translator.ref, self.backend.client.search(
+            _query(collection=identifier, **self.__search_filter),
+            fields=['identifier', 'title', 'mediatype', 'creator'],
+            rows=self.__config['browse_limit'],
+            sort=sort
+        ))
+
+    def __browse_item(self, item):
+        metadata = item['metadata']
+        if metadata.get('mediatype') != 'collection':
+            return list(map(_trackref, self.__gettracks(item)))
+        elif 'members' in item:
+            return list(map(translator.ref, item['members']))
+        else:
+            return self.__browse_views(metadata['identifier'])
+
+        # tracks = self.__lookup(identifier)
+        # self.__tracks = {t.uri: t for t in tracks}  # cache tracks
+        # return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
+
+    def __browse_views(self, identifier, scheme=Extension.ext_name):
+        refs = []
+        for order, name in self.__config['browse_views'].items():
+            uri = uritools.uricompose(scheme, path=identifier, query={
+                'sort': order
+            })
+            refs.append(models.Ref.directory(name=name, uri=uri))
+        return refs
+
     def __browse_root(self):
         collections = self.__config['collections']
-        refs = []
         objs = {obj['identifier']: obj for obj in self.backend.client.search(
             _query(identifier=collections, mediatype='collection'),
             fields=['identifier', 'title', 'mediatype', 'creator'],
             rows=len(collections)
         )}
-        # return in same order as listed in config
-        for id in collections:
-            if id in objs:
-                refs.append(translator.ref(objs[id]))
+        # keep order from config
+        refs = []
+        for identifier in collections:
+            try:
+                obj = objs[identifier]
+            except KeyError:
+                logger.warn('Internet Archive collection "%s" not found',
+                            identifier)
             else:
-                logger.warn('Internet Archive collection "%s" not found', id)
+                refs.append(translator.ref(obj))
         return refs
 
-    def __browse_collection(self, identifier):
-        return map(translator.ref, self.backend.client.search(
-            _query(collection=identifier, **self.__search_filter),
-            fields=['identifier', 'title', 'mediatype', 'creator'],
-            sort=self.__config['browse_order'],
-            rows=self.__config['browse_limit']
-        ))
-
-    def __browse_item(self, identifier):
-        tracks = self.__lookup(identifier)
-        self.__tracks = {t.uri: t for t in tracks}  # cache tracks
-        return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
-
-    def __lookup(self, identifier):
+    def __gettracks(self, item, namegetter=operator.itemgetter('name')):
         client = self.backend.client
+        metadata = item['metadata']
         files = collections.defaultdict(dict)
-        item = client.getitem(identifier)
         # HACK: not all files have "mtime", but reverse-sorting on
         # filename tends to preserve "l(e)ast derived" versions,
         # e.g. "filename.mp3" over "filename_vbr.mp3"
-        key = operator.itemgetter('name')
-        for file in sorted(item['files'], key=key, reverse=True):
+        for file in sorted(item['files'], key=namegetter, reverse=True):
             original = str(file.get('original', file['name']))
             files[file['format']][original] = file
         images = []
         for file in _find(files, self.__config['image_formats'], {}).values():
-            images.append(client.geturl(identifier, file['name']))
-        album = translator.album(item['metadata'], images)
+            images.append(client.geturl(metadata['identifier'], file['name']))
+        album = translator.album(metadata, images)
         tracks = []
         for file in _find(files, self.__config['audio_formats'], {}).values():
-            tracks.append(translator.track(item['metadata'], file, album))
+            tracks.append(translator.track(metadata, file, album))
         tracks.sort(key=lambda t: (t.track_no or 0, t.uri))
         return tracks
