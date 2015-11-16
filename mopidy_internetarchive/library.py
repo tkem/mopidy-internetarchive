@@ -129,9 +129,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             albums=map(translator.album, result)
         )
 
-    def __browse_collection(self, identifier, sort=['downloads desc']):
+    def __browse_collection(self, identifier, q=[], sort=['downloads desc']):
+        if identifier:
+            query = _query(collection=identifier, **self.__search_filter),
+        else:
+            query = ' AND '.join(q) + ' AND ' + _query(**self.__search_filter)
         return map(translator.ref, self.backend.client.search(
-            _query(collection=identifier, **self.__search_filter),
+            query,
             fields=['identifier', 'title', 'mediatype', 'creator'],
             rows=self.__config['browse_limit'],
             sort=sort

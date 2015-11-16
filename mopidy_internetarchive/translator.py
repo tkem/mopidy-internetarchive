@@ -4,7 +4,9 @@ import datetime
 import logging
 import re
 
-from mopidy import models
+from mopidy.models import Album, Artist, Ref, Track
+
+import uritools
 
 from . import Extension
 
@@ -76,47 +78,54 @@ def parse_creator(obj, default=None):
     if not obj or obj == 'tmp':
         return default
     elif isinstance(obj, basestring):
-        return [models.Artist(name=obj)]
+        return [Artist(name=obj)]
     else:
-        return [models.Artist(name=name) for name in obj]
+        return [Artist(name=name) for name in obj]
 
 
-def ref(obj, scheme=Extension.ext_name):
+def uri(identifier=None, filename=None, q=None):
+    if q:
+        return uritools.uricompose(Extension.ext_name, query={'q': q})
+    elif filename:
+        return '%s:%s#%s' % (Extension.ext_name, identifier, filename)
+    else:
+        return '%s:%s' % (Extension.ext_name, identifier)
+
+
+def ref(obj, uri=uri):
     identifier = obj['identifier']
+    mediatype = obj['mediatype']
     name = obj.get('title', identifier)
-    uri = '%s:%s' % (scheme, identifier)
 
-    if obj.get('mediatype', 'collection') != 'collection':
-        return models.Ref.album(uri=uri, name=name)
+    if mediatype == 'search':
+        return Ref.directory(name=name, uri=uri(q=identifier))
+    elif mediatype != 'collection':
+        return Ref.album(name=name, uri=uri(identifier))
     elif name in obj.get('creator', []):
-        return models.Ref.artist(uri=uri, name=name)
+        return Ref.artist(name=name, uri=uri(identifier))
     else:
-        return models.Ref.directory(uri=uri, name=name)
+        return Ref.directory(name=name, uri=uri(identifier))
 
 
-def album(obj, images=[], scheme=Extension.ext_name):
+def album(obj, images=[], uri=uri):
     identifier = obj['identifier']
-    name = obj.get('title', identifier)
-    uri = '%s:%s' % (scheme, identifier)
 
-    return models.Album(
-        uri=uri,
-        name=name,
+    return Album(
+        uri=uri(identifier),
+        name=obj.get('title', identifier),
         artists=parse_creator(obj.get('creator')),
         date=parse_date(obj.get('date')),
         images=images
     )
 
 
-def track(obj, file, album, scheme=Extension.ext_name):
+def track(obj, file, album, uri=uri):
     identifier = obj['identifier']
     filename = file['name']
-    name = file.get('title', filename)
-    uri = '%s:%s#%s' % (scheme, identifier, filename)
 
-    return models.Track(
-        name=name,
-        uri=uri,
+    return Track(
+        uri=uri(identifier, filename),
+        name=file.get('title', filename),
         album=album,
         artists=album.artists,
         track_no=parse_track(file.get('track')),
