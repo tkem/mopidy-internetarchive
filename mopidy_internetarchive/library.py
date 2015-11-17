@@ -1,25 +1,14 @@
 from __future__ import unicode_literals
 
 import collections
-import itertools
 import logging
 import operator
-import re
 
 from mopidy import backend, models
 
 import uritools
 
 from . import Extension, translator
-
-QUERY_CHAR_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
-
-QUERY_MAPPING = {
-    'any': None,
-    'album': 'title',
-    'albumartist': 'creator',
-    'date': 'date'
-}
 
 logger = logging.getLogger(__name__)
 
@@ -29,36 +18,6 @@ def _find(mapping, keys, default=None):
         if key in mapping:
             return mapping[key]
     return default
-
-
-def _query(*args, **kwargs):
-    terms = []
-    for field, value in itertools.chain(args, kwargs.items()):
-        if not value:
-            continue
-        elif isinstance(value, basestring):
-            values = [_quote(value)]
-        else:
-            values = [_quote(v) for v in value]
-        if len(values) == 1:
-            term = values[0]
-        else:
-            term = '(%s)' % ' OR '.join(values)
-        terms.append(field + ':' + term if field else term)
-    return ' AND '.join(terms)
-
-
-def _quote(term):
-    term = QUERY_CHAR_RE.sub(r'\\\1', term)
-    # only quote if term contains whitespace, since date:"2014-01-01"
-    # will raise an error
-    if any(c.isspace() for c in term):
-        term = '"' + term + '"'
-    return term
-
-
-def _trackref(track):
-    return models.Ref.track(name=track.name, uri=track.uri)
 
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
@@ -71,12 +30,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def __init__(self, config, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
         self.__config = ext_config = config[Extension.ext_name]
-        self.__search_filter = {
-            'format': ext_config['audio_formats'],
-            '-collection': ext_config['exclude_collections'],
-            '-mediatype': ext_config['exclude_mediatypes']
-        }
-        self.__tracks = {}  # track cache for faster lookup
+        self.__browse_filter = '(mediatype:collection OR format:(%s))' % (
+            ' OR '.join(map(translator.quote, ext_config['audio_formats']))
+        )
+        self.__search_filter = 'format:(%s)' % (
+            ' OR '.join(map(translator.quote, ext_config['audio_formats']))
+        )
+        self.__lookup = {}  # track cache for faster lookup
 
     def browse(self, uri):
         parts = uritools.urisplit(uri)
@@ -89,13 +49,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def lookup(self, uri):
         try:
-            return [self.__tracks[uri]]
+            return [self.__lookup[uri]]
         except KeyError:
-            logger.debug("track lookup cache miss for %r", uri)
+            logger.debug("Lookup cache miss for %r", uri)
         try:
             _, _, identifier, _, filename = uritools.urisplit(uri)
-            tracks = self.__gettracks(self.backend.client.getitem(identifier))
-            self.__tracks = trackmap = {t.uri: t for t in tracks}
+            tracks = self.__tracks(self.backend.client.getitem(identifier))
+            self.__lookup = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
         except Exception as e:
             logger.error('Lookup failed for %s: %s', uri, e)
@@ -104,25 +64,28 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def refresh(self, uri=None):
         if self.backend.client.cache:
             self.backend.client.cache.clear()
-        self.__tracks.clear()
+        self.__lookup.clear()
 
     def search(self, query=None, uris=None, exact=False):
-        if exact:
-            return None  # exact queries not supported
-        terms = []
-        for field, values in (query.iteritems() if query else []):
-            if field not in QUERY_MAPPING:
-                return None  # no result if unmapped field
-            else:
-                terms.extend((QUERY_MAPPING[field], v) for v in values)
-        if uris:
-            ids = filter(None, [uritools.urisplit(uri).path for uri in uris])
-            terms.append(('collection', tuple(ids)))
+        # sanitize uris
+        uris = set(uris or [self.root_directory.uri])
+        if self.root_directory.uri in uris:
+            # TODO: from cached root collections?
+            uris.update(translator.uri(identifier)
+                        for identifier in self.__config['collections'])
+            uris.remove(self.root_directory.uri)
+        try:
+            qs = translator.query(query, uris, exact)
+        except ValueError as e:
+            logger.info('Not searching %s: %s', Extension.dist_name, e)
+            return None
+        else:
+            logger.debug('Internet Archive query: %s' % qs)
         result = self.backend.client.search(
-            _query(*terms, **self.__search_filter),
+            '%s AND %s' % (qs, self.__search_filter),
             fields=['identifier', 'title', 'creator', 'date'],
-            sort=self.__config['search_order'],
-            rows=self.__config['search_limit']
+            rows=self.__config['search_limit'],
+            sort=self.__config['search_order']
         )
         return models.SearchResult(
             uri=uritools.uricompose(Extension.ext_name, query=result.query),
@@ -131,28 +94,26 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def __browse_collection(self, identifier, q=[], sort=['downloads desc']):
         if identifier:
-            query = _query(collection=identifier, **self.__search_filter),
+            qs = 'collection:%s' % identifier
         else:
-            query = ' AND '.join(q) + ' AND ' + _query(**self.__search_filter)
-        return map(translator.ref, self.backend.client.search(
-            query,
+            qs = ' AND '.join(q)
+        return list(map(translator.ref, self.backend.client.search(
+            '%s AND %s' % (qs, self.__browse_filter),
             fields=['identifier', 'title', 'mediatype', 'creator'],
             rows=self.__config['browse_limit'],
             sort=sort
-        ))
+        )))
 
     def __browse_item(self, item):
         metadata = item['metadata']
         if metadata.get('mediatype') != 'collection':
-            return list(map(_trackref, self.__gettracks(item)))
+            tracks = self.__tracks(item)
+            self.__lookup = {t.uri: t for t in tracks}  # cache tracks
+            return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
         elif 'members' in item:
             return list(map(translator.ref, item['members']))
         else:
             return self.__browse_views(metadata['identifier'])
-
-        # tracks = self.__lookup(identifier)
-        # self.__tracks = {t.uri: t for t in tracks}  # cache tracks
-        # return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
 
     def __browse_views(self, identifier, scheme=Extension.ext_name):
         refs = []
@@ -164,15 +125,16 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return refs
 
     def __browse_root(self):
-        collections = self.__config['collections']
-        objs = {obj['identifier']: obj for obj in self.backend.client.search(
-            _query(identifier=collections, mediatype='collection'),
-            fields=['identifier', 'title', 'mediatype', 'creator'],
-            rows=len(collections)
-        )}
-        # keep order from config
+        # TODO: cache this
+        result = self.backend.client.search(
+            'mediatype:collection AND identifier:(%s)' % (
+                ' OR '.join(self.__config['collections'])
+            ),
+            fields=['identifier', 'title', 'mediatype', 'creator']
+        )
         refs = []
-        for identifier in collections:
+        objs = {obj['identifier']: obj for obj in result}
+        for identifier in self.__config['collections']:
             try:
                 obj = objs[identifier]
             except KeyError:
@@ -182,7 +144,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 refs.append(translator.ref(obj))
         return refs
 
-    def __gettracks(self, item, namegetter=operator.itemgetter('name')):
+    def __tracks(self, item, namegetter=operator.itemgetter('name')):
         client = self.backend.client
         metadata = item['metadata']
         files = collections.defaultdict(dict)

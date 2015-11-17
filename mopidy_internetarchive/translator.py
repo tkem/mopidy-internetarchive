@@ -24,6 +24,25 @@ ISODATE_RE = re.compile(r"""
 (?:\-(\d{2}))?
 """, flags=re.VERBOSE)
 
+_QUERYMAP = {
+    'any': lambda values: (
+        ' AND '.join(map(quote, values))
+    ),
+    'album': lambda values: (
+        'title:(%s)' % ' '.join(map(quote, values))
+    ),
+    'albumartist': lambda values: (
+        'creator:(%s)' % ' '.join(map(quote, values))
+    ),
+    'artist': lambda values: (
+        'creator:(%s)' % ' '.join(map(quote, values))
+    ),
+    'date': lambda values: (
+        # TODO: sanitize, not quote date! date:(2014-01-01) gives error
+        ' AND '.join('date:%s' % quote(value) for value in values)
+    )
+}
+
 logger = logging.getLogger(__name__)
 
 
@@ -134,3 +153,32 @@ def track(obj, file, album, uri=uri):
         bitrate=parse_bitrate(file.get('bitrate')),
         last_modified=parse_mtime(file.get('mtime'))
     )
+
+
+def query(query, uris=None, exact=False):
+    if exact:
+        raise ValueError('Exact queries not supported')
+    terms = []
+    for key, values in (query.iteritems() if query else []):
+        try:
+            term = _QUERYMAP[key](values)
+        except KeyError:
+            raise ValueError('Keyword "%s" not supported' % key)
+        else:
+            terms.append(term)
+    collections = []
+    for uri in uris or []:
+        parts = uritools.urisplit(uri)
+        if parts.path:
+            collections.append(parts.path)
+        elif parts.query or parts.fragment:
+            raise ValueError('Cannot search "%s"' % uri)
+        else:
+            pass  # root uri?
+    if collections:
+        terms.append('collection:(%s)' % ' OR '.join(collections))
+    return ' AND '.join(terms)
+
+
+def quote(value, re=re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')):
+    return '"%s"' % re.sub(r'\\\1', value)

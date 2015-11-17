@@ -75,14 +75,14 @@ class Extension(ext.Extension):
         schema['browse_views'] = Mapping(keys=config.String(choices=SORT_FIELDS))  # noqa
         schema['search_limit'] = config.Integer(minimum=1, optional=True)
         schema['search_order'] = config.String(choices=SORT_FIELDS, optional=True)  # noqa
-        schema['exclude_collections'] = config.List(optional=True)
-        schema['exclude_mediatypes'] = config.List(optional=True)
         schema['cache_size'] = config.Integer(minimum=1, optional=True)
         schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
         schema['retries'] = config.Integer(minimum=0)
         schema['timeout'] = config.Integer(minimum=0, optional=True)
         # no longer used
         schema['browse_order'] = config.Deprecated()
+        schema['exclude_collections'] = config.Deprecated()
+        schema['exclude_mediatypes'] = config.Deprecated()
         schema['username'] = config.Deprecated()
         return schema
 
