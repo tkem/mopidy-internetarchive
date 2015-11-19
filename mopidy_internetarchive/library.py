@@ -2,29 +2,18 @@ from __future__ import unicode_literals
 
 import collections
 import logging
-import operator
 
 from mopidy import backend, models
-
-import uritools
 
 from . import Extension, translator
 
 logger = logging.getLogger(__name__)
 
 
-def _find(mapping, keys, default=None):
-    for key in keys:
-        if key in mapping:
-            return mapping[key]
-    return default
-
-
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     root_directory = models.Ref.directory(
-        uri=uritools.uricompose(Extension.ext_name),
-        name='Internet Archive'
+        uri=translator.uri(''), name='Internet Archive'
     )
 
     def __init__(self, config, backend):
@@ -39,13 +28,32 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         self.__lookup = {}  # track cache for faster lookup
 
     def browse(self, uri):
-        parts = uritools.urisplit(uri)
-        if parts.query:
-            return self.__browse_collection(parts.path, **parts.getquerydict())
-        elif parts.path:
-            return self.__browse_item(self.backend.client.getitem(parts.path))
+        identifier, filename, query = translator.parse_uri(uri)
+        if filename:
+            return []
+        elif query:
+            return self.__browse_collection(identifier, **query)
+        elif identifier:
+            return self.__browse_item(identifier)
         else:
             return self.__browse_root()
+
+    def get_images(self, uris):
+        client = self.backend.client
+        urimap = collections.defaultdict(list)
+        for uri in uris:
+            identifier, _, _ = translator.parse_uri(uri)
+            if identifier:
+                urimap[identifier].append(uri)
+            else:
+                logger.warn('No images for %s', uri)
+        results = {}
+        formats = self.__config['image_formats']
+        for identifier in urimap:
+            item = client.getitem(identifier)
+            images = translator.images(item, formats, client.geturl)
+            results.update(dict.fromkeys(urimap[identifier], images))
+        return results
 
     def lookup(self, uri):
         try:
@@ -53,7 +61,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         except KeyError:
             logger.debug("Lookup cache miss for %r", uri)
         try:
-            _, _, identifier, _, filename = uritools.urisplit(uri)
+            identifier, filename, _ = translator.parse_uri(uri)
             tracks = self.__tracks(self.backend.client.getitem(identifier))
             self.__lookup = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
@@ -62,8 +70,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return []
 
     def refresh(self, uri=None):
-        if self.backend.client.cache:
-            self.backend.client.cache.clear()
+        client = self.backend.client
+        if client.cache:
+            client.cache.clear()
         self.__lookup.clear()
 
     def search(self, query=None, uris=None, exact=False):
@@ -88,7 +97,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=self.__config['search_order']
         )
         return models.SearchResult(
-            uri=uritools.uricompose(Extension.ext_name, query=result.query),
+            uri=translator.uri(q=result.query),
             albums=map(translator.album, result)
         )
 
@@ -104,25 +113,16 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             sort=sort
         )))
 
-    def __browse_item(self, item):
-        metadata = item['metadata']
-        if metadata.get('mediatype') != 'collection':
+    def __browse_item(self, identifier):
+        item = self.backend.client.getitem(identifier)
+        if item['metadata']['mediatype'] != 'collection':
             tracks = self.__tracks(item)
             self.__lookup = {t.uri: t for t in tracks}  # cache tracks
             return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
         elif 'members' in item:
             return list(map(translator.ref, item['members']))
         else:
-            return self.__browse_views(metadata['identifier'])
-
-    def __browse_views(self, identifier, scheme=Extension.ext_name):
-        refs = []
-        for order, name in self.__config['browse_views'].items():
-            uri = uritools.uricompose(scheme, path=identifier, query={
-                'sort': order
-            })
-            refs.append(models.Ref.directory(name=name, uri=uri))
-        return refs
+            return self.__views(identifier)
 
     def __browse_root(self):
         # TODO: cache this
@@ -144,22 +144,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 refs.append(translator.ref(obj))
         return refs
 
-    def __tracks(self, item, namegetter=operator.itemgetter('name')):
-        client = self.backend.client
-        metadata = item['metadata']
-        files = collections.defaultdict(dict)
-        # HACK: not all files have "mtime", but reverse-sorting on
-        # filename tends to preserve "l(e)ast derived" versions,
-        # e.g. "filename.mp3" over "filename_vbr.mp3"
-        for file in sorted(item['files'], key=namegetter, reverse=True):
-            original = str(file.get('original', file['name']))
-            files[file['format']][original] = file
-        images = []
-        for file in _find(files, self.__config['image_formats'], {}).values():
-            images.append(client.geturl(metadata['identifier'], file['name']))
-        album = translator.album(metadata, images)
-        tracks = []
-        for file in _find(files, self.__config['audio_formats'], {}).values():
-            tracks.append(translator.track(metadata, file, album))
-        tracks.sort(key=lambda t: (t.track_no or 0, t.uri))
+    def __tracks(self, item, key=lambda t: (t.track_no or 0, t.uri)):
+        tracks = translator.tracks(item, self.__config['audio_formats'])
+        tracks.sort(key=key)
         return tracks
+
+    def __views(self, identifier):
+        refs = []
+        for order, name in self.__config['browse_views'].items():
+            uri = translator.uri(identifier, sort=order)
+            refs.append(models.Ref.directory(name=name, uri=uri))
+        return refs

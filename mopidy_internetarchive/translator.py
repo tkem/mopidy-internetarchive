@@ -1,10 +1,11 @@
 from __future__ import unicode_literals
 
+import collections
 import datetime
 import logging
 import re
 
-from mopidy.models import Album, Artist, Ref, Track
+from mopidy.models import Album, Artist, Image, Ref, Track
 
 import uritools
 
@@ -102,20 +103,25 @@ def parse_creator(obj, default=None):
         return [Artist(name=name) for name in obj]
 
 
-def uri(identifier=None, filename=None, q=None):
-    if q:
-        return uritools.uricompose(Extension.ext_name, query={'q': q})
-    elif filename:
-        return '%s:%s#%s' % (Extension.ext_name, identifier, filename)
+def parse_uri(uri):
+    parts = uritools.urisplit(uri)
+    return parts.path, parts.getfragment(), parts.getquerydict()
+
+
+def uri(identifier='', filename=None, scheme=Extension.ext_name, **kwargs):
+    # filename may contain whitespace, e.g. PattiSmith1971
+    if filename:
+        return uritools.uricompose(scheme, path=identifier, fragment=filename)
+    elif kwargs:
+        return uritools.uricompose(scheme, path=identifier, query=kwargs)
     else:
-        return '%s:%s' % (Extension.ext_name, identifier)
+        return '%s:%s' % (scheme, identifier)
 
 
 def ref(obj, uri=uri):
     identifier = obj['identifier']
     mediatype = obj['mediatype']
     name = obj.get('title', identifier)
-
     if mediatype == 'search':
         return Ref.directory(name=name, uri=uri(q=identifier))
     elif mediatype != 'collection':
@@ -126,33 +132,65 @@ def ref(obj, uri=uri):
         return Ref.directory(name=name, uri=uri(identifier))
 
 
-def album(obj, images=[], uri=uri):
-    identifier = obj['identifier']
+def artists(obj):
+    artist = obj.get('artist', obj.get('creator'))
+    if not artist:
+        return None
+    elif isinstance(artist, basestring):
+        return [Artist(name=artist)]
+    else:
+        return [Artist(name=name) for name in artist]
 
+
+def album(obj, uri=uri):
+    identifier = obj['identifier']
     return Album(
         uri=uri(identifier),
         name=obj.get('title', identifier),
-        artists=parse_creator(obj.get('creator')),
-        date=parse_date(obj.get('date')),
-        images=images
+        artists=artists(obj),
+        date=parse_date(obj.get('date'))
     )
 
 
-def track(obj, file, album, uri=uri):
-    identifier = obj['identifier']
-    filename = file['name']
+def files(item, formats):
+    byname = {}
+    byformat = collections.defaultdict(list)
+    for obj in item['files']:
+        byname[obj['name']] = obj
+        byformat[obj['format']].append(obj)
+    try:
+        files = next(byformat[f] for f in formats if f in byformat)
+    except StopIteration:
+        return []
+    else:
+        return [dict(byname.get(f.get('original'), {}), **f) for f in files]
 
-    return Track(
-        uri=uri(identifier, filename),
-        name=file.get('title', filename),
-        album=album,
-        artists=album.artists,
-        track_no=parse_track(file.get('track')),
-        date=parse_date(file.get('date'), album.date),
-        length=parse_length(file.get('length')),
-        bitrate=parse_bitrate(file.get('bitrate')),
-        last_modified=parse_mtime(file.get('mtime'))
-    )
+
+def images(item, formats, uri=uri):
+    identifier = item['metadata']['identifier']
+    images = []
+    for obj in files(item, formats):
+        images.append(Image(uri=uri(identifier, obj['name'])))
+    return images
+
+
+def tracks(item, formats, uri=uri):
+    identifier = item['metadata']['identifier']
+    track = Track(album=album(item['metadata']))
+    tracks = []
+    for obj in files(item, formats):
+        name = obj['name']
+        tracks.append(track.replace(
+            uri=uri(identifier, name),
+            name=obj.get('title', name),
+            artists=artists(obj) or track.album.artists,
+            genre=obj.get('genre'),
+            track_no=parse_track(obj.get('track')),
+            length=parse_length(obj.get('length')),
+            bitrate=parse_bitrate(obj.get('bitrate')),
+            last_modified=parse_mtime(obj.get('mtime'))
+        ))
+    return tracks
 
 
 def query(query, uris=None, exact=False):
