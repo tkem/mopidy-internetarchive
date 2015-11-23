@@ -124,12 +124,10 @@ def ref(obj, uri=uri):
     name = obj.get('title', identifier)
     if mediatype == 'search':
         return Ref.directory(name=name, uri=uri(q=identifier))
-    elif mediatype != 'collection':
-        return Ref.album(name=name, uri=uri(identifier))
-    elif name in obj.get('creator', []):
-        return Ref.artist(name=name, uri=uri(identifier))
-    else:
+    elif mediatype == 'collection':
         return Ref.directory(name=name, uri=uri(identifier))
+    else:
+        return Ref.album(name=name, uri=uri(identifier))
 
 
 def artists(obj):

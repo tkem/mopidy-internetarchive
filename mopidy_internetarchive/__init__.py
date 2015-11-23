@@ -34,7 +34,7 @@ SORT_FIELDS = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
 )]
 
 
-class Mapping(config.ConfigValue):
+class Map(config.ConfigValue):
 
     def __init__(self, keys=config.String(), values=config.String(), delim='|',
                  optional=False):
@@ -67,23 +67,25 @@ class Extension(ext.Extension):
 
     def get_config_schema(self):
         schema = super(Extension, self).get_config_schema()
-        schema['base_url'] = config.String()
-        schema['collections'] = config.List()
-        schema['audio_formats'] = config.List()
-        schema['image_formats'] = config.List()
-        schema['browse_limit'] = config.Integer(minimum=1, optional=True)
-        schema['browse_views'] = Mapping(keys=config.String(choices=SORT_FIELDS))  # noqa
-        schema['search_limit'] = config.Integer(minimum=1, optional=True)
-        schema['search_order'] = config.String(choices=SORT_FIELDS, optional=True)  # noqa
-        schema['cache_size'] = config.Integer(minimum=1, optional=True)
-        schema['cache_ttl'] = config.Integer(minimum=0, optional=True)
-        schema['retries'] = config.Integer(minimum=0)
-        schema['timeout'] = config.Integer(minimum=0, optional=True)
-        # no longer used
-        schema['browse_order'] = config.Deprecated()
-        schema['exclude_collections'] = config.Deprecated()
-        schema['exclude_mediatypes'] = config.Deprecated()
-        schema['username'] = config.Deprecated()
+        schema.update(
+            base_url=config.String(),
+            collections=config.List(),
+            audio_formats=config.List(),
+            image_formats=config.List(),
+            browse_limit=config.Integer(minimum=1, optional=True),
+            browse_views=Map(keys=config.String(choices=SORT_FIELDS)),
+            search_limit=config.Integer(minimum=1, optional=True),
+            search_order=config.String(choices=SORT_FIELDS, optional=True),
+            cache_size=config.Integer(minimum=1, optional=True),
+            cache_ttl=config.Integer(minimum=0, optional=True),
+            retries=config.Integer(minimum=0),
+            timeout=config.Integer(minimum=0, optional=True),
+            # no longer used
+            browse_order=config.Deprecated(),
+            exclude_collections=config.Deprecated(),
+            exclude_mediatypes=config.Deprecated(),
+            username=config.Deprecated()
+        )
         return schema
 
     def setup(self, registry):

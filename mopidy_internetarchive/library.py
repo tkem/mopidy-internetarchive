@@ -18,13 +18,22 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def __init__(self, config, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
-        self.__config = ext_config = config[Extension.ext_name]
+        self.__root_collections = config['collections']
+        self.__audio_formats = config['audio_formats']
+        self.__image_formats = config['image_formats']
+
         self.__browse_filter = '(mediatype:collection OR format:(%s))' % (
-            ' OR '.join(map(translator.quote, ext_config['audio_formats']))
+            ' OR '.join(map(translator.quote, config['audio_formats']))
         )
+        self.__browse_limit = config['browse_limit']
+        self.__browse_views = config['browse_views']
+
         self.__search_filter = 'format:(%s)' % (
-            ' OR '.join(map(translator.quote, ext_config['audio_formats']))
+            ' OR '.join(map(translator.quote, config['audio_formats']))
         )
+        self.__search_limit = config['search_limit']
+        self.__search_order = config['search_order']
+
         self.__lookup = {}  # track cache for faster lookup
 
     def browse(self, uri):
@@ -48,11 +57,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             else:
                 logger.warn('No images for %s', uri)
         results = {}
-        formats = self.__config['image_formats']
         for identifier in urimap:
-            item = client.getitem(identifier)
-            images = translator.images(item, formats, client.geturl)
-            results.update(dict.fromkeys(urimap[identifier], images))
+            results.update(dict.fromkeys(urimap[identifier], translator.images(
+                client.getitem(identifier), self.__image_formats, client.geturl
+            )))
         return results
 
     def lookup(self, uri):
@@ -81,7 +89,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         if self.root_directory.uri in uris:
             # TODO: from cached root collections?
             uris.update(translator.uri(identifier)
-                        for identifier in self.__config['collections'])
+                        for identifier in self.__root_collections)
             uris.remove(self.root_directory.uri)
         try:
             qs = translator.query(query, uris, exact)
@@ -93,8 +101,8 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         result = self.backend.client.search(
             '%s AND %s' % (qs, self.__search_filter),
             fields=['identifier', 'title', 'creator', 'date'],
-            rows=self.__config['search_limit'],
-            sort=self.__config['search_order']
+            rows=self.__search_limit,
+            sort=self.__search_order
         )
         return models.SearchResult(
             uri=translator.uri(q=result.query),
@@ -109,7 +117,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return list(map(translator.ref, self.backend.client.search(
             '%s AND %s' % (qs, self.__browse_filter),
             fields=['identifier', 'title', 'mediatype', 'creator'],
-            rows=self.__config['browse_limit'],
+            rows=self.__browse_limit,
             sort=sort
         )))
 
@@ -119,8 +127,6 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             tracks = self.__tracks(item)
             self.__lookup = {t.uri: t for t in tracks}  # cache tracks
             return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
-        elif 'members' in item:
-            return list(map(translator.ref, item['members']))
         else:
             return self.__views(identifier)
 
@@ -128,13 +134,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         # TODO: cache this
         result = self.backend.client.search(
             'mediatype:collection AND identifier:(%s)' % (
-                ' OR '.join(self.__config['collections'])
+                ' OR '.join(self.__root_collections)
             ),
             fields=['identifier', 'title', 'mediatype', 'creator']
         )
         refs = []
         objs = {obj['identifier']: obj for obj in result}
-        for identifier in self.__config['collections']:
+        for identifier in self.__root_collections:
             try:
                 obj = objs[identifier]
             except KeyError:
@@ -145,13 +151,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         return refs
 
     def __tracks(self, item, key=lambda t: (t.track_no or 0, t.uri)):
-        tracks = translator.tracks(item, self.__config['audio_formats'])
+        tracks = translator.tracks(item, self.__audio_formats)
         tracks.sort(key=key)
         return tracks
 
     def __views(self, identifier):
         refs = []
-        for order, name in self.__config['browse_views'].items():
+        for order, name in self.__browse_views.items():
             uri = translator.uri(identifier, sort=order)
             refs.append(models.Ref.directory(name=name, uri=uri))
         return refs
