@@ -40,7 +40,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         identifier, filename, query = translator.parse_uri(uri)
         if filename:
             return []
-        elif query:
+        elif identifier and query:
             return self.__browse_collection(identifier, **query)
         elif identifier:
             return self.__browse_item(identifier)
@@ -109,13 +109,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             albums=map(translator.album, result)
         )
 
-    def __browse_collection(self, identifier, q=[], sort=['downloads desc']):
-        if identifier:
-            qs = 'collection:%s' % identifier
-        else:
-            qs = ' AND '.join(q)
+    def __browse_collection(self, identifier, sort=['downloads desc']):
         return list(map(translator.ref, self.backend.client.search(
-            '%s AND %s' % (qs, self.__browse_filter),
+            'collection:%s AND %s' % (identifier, self.__browse_filter),
             fields=['identifier', 'title', 'mediatype', 'creator'],
             rows=self.__browse_limit,
             sort=sort

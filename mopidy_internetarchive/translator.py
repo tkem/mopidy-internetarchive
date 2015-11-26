@@ -94,15 +94,6 @@ def parse_track(string, default=None):
     return default
 
 
-def parse_creator(obj, default=None):
-    if not obj or obj == 'tmp':
-        return default
-    elif isinstance(obj, basestring):
-        return [Artist(name=obj)]
-    else:
-        return [Artist(name=name) for name in obj]
-
-
 def parse_uri(uri):
     parts = uritools.urisplit(uri)
     return parts.path, parts.getfragment(), parts.getquerydict()
@@ -122,9 +113,7 @@ def ref(obj, uri=uri):
     identifier = obj['identifier']
     mediatype = obj['mediatype']
     name = obj.get('title', identifier)
-    if mediatype == 'search':
-        return Ref.directory(name=name, uri=uri(q=identifier))
-    elif mediatype == 'collection':
+    if mediatype == 'collection':
         return Ref.directory(name=name, uri=uri(identifier))
     else:
         return Ref.album(name=name, uri=uri(identifier))
@@ -207,10 +196,10 @@ def query(query, uris=None, exact=False):
         parts = uritools.urisplit(uri)
         if parts.path:
             collections.append(parts.path)
-        elif parts.query or parts.fragment:
-            raise ValueError('Cannot search "%s"' % uri)
+        elif not parts.query and not parts.fragment:
+            pass  # root URI?
         else:
-            pass  # root uri?
+            raise ValueError('Cannot search "%s"' % uri)
     if collections:
         terms.append('collection:(%s)' % ' OR '.join(collections))
     return ' AND '.join(terms)

@@ -34,7 +34,7 @@ SORT_FIELDS = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
 )]
 
 
-class Map(config.ConfigValue):
+class ConfigMap(config.ConfigValue):
 
     def __init__(self, keys=config.String(), values=config.String(), delim='|',
                  optional=False):
@@ -53,7 +53,13 @@ class Map(config.ConfigValue):
         return dict
 
     def serialize(self, value, display=False):
-        raise NotImplementedError
+        if not value:
+            return b''
+        items = [
+            (self.__keys.serialize(k), self.__values.serialize(v))
+            for k, v in value.items()
+        ]
+        return config.List().serialize(map(self.__delim.join, items))
 
 
 class Extension(ext.Extension):
@@ -73,7 +79,7 @@ class Extension(ext.Extension):
             audio_formats=config.List(),
             image_formats=config.List(),
             browse_limit=config.Integer(minimum=1, optional=True),
-            browse_views=Map(keys=config.String(choices=SORT_FIELDS)),
+            browse_views=ConfigMap(keys=config.String(choices=SORT_FIELDS)),
             search_limit=config.Integer(minimum=1, optional=True),
             search_order=config.String(choices=SORT_FIELDS, optional=True),
             cache_size=config.Integer(minimum=1, optional=True),
