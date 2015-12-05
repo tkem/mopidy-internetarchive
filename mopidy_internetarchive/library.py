@@ -34,6 +34,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         self.__search_limit = config['search_limit']
         self.__search_order = config['search_order']
 
+        self.__directories = collections.OrderedDict()
         self.__lookup = {}  # track cache for faster lookup
 
     def browse(self, uri):
@@ -84,6 +85,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         client = self.backend.client
         if client.cache:
             client.cache.clear()
+        self.__directories.clear()
         self.__lookup.clear()
 
     def search(self, query=None, uris=None, exact=False):
@@ -115,42 +117,41 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def __browse_collection(self, identifier, sort=['downloads desc']):
         return list(map(translator.ref, self.backend.client.search(
             'collection:%s AND %s' % (identifier, self.__browse_filter),
-            fields=['identifier', 'title', 'mediatype', 'creator'],
+            fields=['identifier', 'mediatype', 'title', 'creator'],
             rows=self.__browse_limit,
             sort=sort
         )))
 
     def __browse_item(self, identifier):
-        item = self.backend.client.getitem(identifier)
-        if item['metadata']['mediatype'] != 'collection':
-            tracks = self.__tracks(item)
-            self.__lookup = {t.uri: t for t in tracks}  # cache tracks
-            return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
-        else:
+        if identifier in self.__directories:
             return self.__views(identifier)
+        item = self.backend.client.getitem(identifier)
+        if item['metadata']['mediatype'] == 'collection':
+            return self.__views(identifier)
+        tracks = self.__tracks(item)
+        self.__lookup = {t.uri: t for t in tracks}  # cache tracks
+        return [models.Ref.track(uri=t.uri, name=t.name) for t in tracks]
 
     def __browse_root(self):
-        # TODO: cache this
-        result = self.backend.client.search(
-            'mediatype:collection AND identifier:(%s)' % (
-                ' OR '.join(self.__collections)
-            ),
-            fields=['identifier', 'title', 'mediatype', 'creator']
-        )
-        refs = []
-        objs = {obj['identifier']: obj for obj in result}
-        for identifier in self.__collections:
-            try:
-                obj = objs[identifier]
-            except KeyError:
-                logger.warn('Internet Archive collection "%s" not found',
-                            identifier)
-            else:
-                refs.append(translator.ref(obj))
-        return refs
+        if not self.__directories:
+            result = self.backend.client.search(
+                'mediatype:collection AND identifier:(%s)' % (
+                    ' OR '.join(self.__collections)
+                ),
+                fields=['identifier', 'mediatype', 'title']
+            )
+            objs = {obj['identifier']: obj for obj in result}
+            for identifier in self.__collections:
+                try:
+                    obj = objs[identifier]
+                except KeyError as e:
+                    logger.warn('Internet Archive collection not found: %s', e)
+                else:
+                    self.__directories[identifier] = translator.ref(obj)
+        return list(self.__directories.values())
 
     def __images(self, item):
-        uri = self.backend.client.geturl  # get archive.org URL
+        uri = self.backend.client.geturl  # get download URL for images
         return translator.images(item, self.__image_formats, uri)
 
     def __tracks(self, item, key=lambda t: (t.track_no or 0, t.uri)):
