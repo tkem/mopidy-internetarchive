@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 from mopidy import models
 
+import pytest
+
 ITEM = {
     'files': [{
         'name': 'track02.mp3',
@@ -81,6 +83,6 @@ def test_lookup_refresh(library, client_mock):
 
 def test_lookup_unknown(library, client_mock):
     client_mock.getitem.side_effect = LookupError('null')
-    results = library.lookup('internetarchive:null')
+    with pytest.raises(LookupError):
+        library.lookup('internetarchive:null')
     client_mock.getitem.assert_called_once_with('null')
-    assert results == []

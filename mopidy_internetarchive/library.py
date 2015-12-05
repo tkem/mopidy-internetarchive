@@ -18,7 +18,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def __init__(self, config, backend):
         super(InternetArchiveLibraryProvider, self).__init__(backend)
-        self.__root_collections = config['collections']
+        self.__collections = config['collections']
         self.__audio_formats = config['audio_formats']
         self.__image_formats = config['image_formats']
 
@@ -48,19 +48,23 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return self.__browse_root()
 
     def get_images(self, uris):
-        client = self.backend.client
+        # map uris to item identifiers
         urimap = collections.defaultdict(list)
         for uri in uris:
             identifier, _, _ = translator.parse_uri(uri)
             if identifier:
                 urimap[identifier].append(uri)
             else:
-                logger.warn('No images for %s', uri)
+                logger.debug('Not retrieving images for %s', uri)
+        # retrieve item images and map back to uris
         results = {}
-        for identifier in urimap:
-            results.update(dict.fromkeys(urimap[identifier], translator.images(
-                client.getitem(identifier), self.__image_formats, client.geturl
-            )))
+        for identifier, uris in urimap.items():
+            try:
+                item = self.backend.client.getitem(identifier)
+            except Exception as e:
+                logger.error('Error retrieving images for %s: %s', uris, e)
+            else:
+                results.update(dict.fromkeys(uris, self.__images(item)))
         return results
 
     def lookup(self, uri):
@@ -68,13 +72,12 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return [self.__lookup[uri]]
         except KeyError:
             logger.debug("Lookup cache miss for %r", uri)
-        try:
-            identifier, filename, _ = translator.parse_uri(uri)
+        identifier, filename, _ = translator.parse_uri(uri)
+        if identifier:
             tracks = self.__tracks(self.backend.client.getitem(identifier))
             self.__lookup = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
-        except Exception as e:
-            logger.error('Lookup failed for %s: %s', uri, e)
+        else:
             return []
 
     def refresh(self, uri=None):
@@ -87,10 +90,9 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         # sanitize uris
         uris = set(uris or [self.root_directory.uri])
         if self.root_directory.uri in uris:
-            # TODO: from cached root collections?
-            uris.update(translator.uri(identifier)
-                        for identifier in self.__root_collections)
+            uris.update(map(translator.uri, self.__collections))
             uris.remove(self.root_directory.uri)
+        # translate query
         try:
             qs = translator.query(query, uris, exact)
         except ValueError as e:
@@ -98,6 +100,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             return None
         else:
             logger.debug('Internet Archive query: %s' % qs)
+        # fetch results
         result = self.backend.client.search(
             '%s AND %s' % (qs, self.__search_filter),
             fields=['identifier', 'title', 'creator', 'date'],
@@ -130,13 +133,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         # TODO: cache this
         result = self.backend.client.search(
             'mediatype:collection AND identifier:(%s)' % (
-                ' OR '.join(self.__root_collections)
+                ' OR '.join(self.__collections)
             ),
             fields=['identifier', 'title', 'mediatype', 'creator']
         )
         refs = []
         objs = {obj['identifier']: obj for obj in result}
-        for identifier in self.__root_collections:
+        for identifier in self.__collections:
             try:
                 obj = objs[identifier]
             except KeyError:
@@ -145,6 +148,10 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             else:
                 refs.append(translator.ref(obj))
         return refs
+
+    def __images(self, item):
+        uri = self.backend.client.geturl  # get archive.org URL
+        return translator.images(item, self.__image_formats, uri)
 
     def __tracks(self, item, key=lambda t: (t.track_no or 0, t.uri)):
         tracks = translator.tracks(item, self.__audio_formats)
