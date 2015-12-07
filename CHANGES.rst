@@ -1,7 +1,20 @@
-v2.0.0 (UNRELEASED)
+v2.0.0 (2015-12-08)
 -------------------
 
+- Support configurable sort criteria when browsing collections via
+  "browse views".
+
+- Include collections in browse results.
+
+- Add support for ``LibraryProvider.get_images()``.
+
+- Drop support for deprecated ``Album.images``.
+
 - Drop special handling of bookmarks.
+
+- Cache root collections.
+
+- Update documentation.
 
 
 v1.3.0 (2015-09-11)
@@ -83,7 +96,7 @@ v1.0.0 (2014-09-26)
 
 
 v0.5.0 (2014-02-28)
-----------------
+-------------------
 
 - Update `README` with link to documentation.
 

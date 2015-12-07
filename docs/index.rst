@@ -7,9 +7,10 @@ the `Internet Archive`_.
 This extension lets you search for and stream recordings ranging from
 `alternative news programming`_, to `Grateful Dead concerts`_, to `Old
 Time Radio shows`_, to `book and poetry readings`_, to `original
-music`_ uploaded by Internet Archive users.  Last but not least, it
-gives you access to a vast collection of high-quality free live
-recordings from the `Live Music Archive`_.
+music`_ uploaded by Internet Archive users.  It also gives you access
+to a vast number of high-quality live recordings from the `Live Music
+Archive`_, and thousands of free audiobooks from the LibriVox_
+collection.
 
 
 .. toctree::
@@ -18,6 +19,7 @@ recordings from the `Live Music Archive`_.
    intro
    install
    config
+   changelog
    license
 
 
@@ -29,3 +31,5 @@ recordings from the `Live Music Archive`_.
 .. _book and poetry readings: https://archive.org/details/audio_bookspoetry
 .. _original music: https://archive.org/details/opensource_audio
 .. _Live Music Archive: https://archive.org/details/etree
+.. _LibriVox: https://archive.org/details/librivoxaudio
+.. _donate: https://archive.org/donate/

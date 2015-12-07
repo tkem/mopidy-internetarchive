@@ -9,7 +9,7 @@ About the Internet Archive Metadata Model
    This is just a brief introduction to get you accustomed to some
    basic Internet Archive concepts and terminology related to this
    Mopidy extension.  For more in-depth information, please refer to
-   the FAQ_, or start with this `blog post`_.
+   the FAQ_ or this `blog post`_.
 
 Files published on the Internet Archive are organized in so-called
 *items*.  An item is a directory or folder that includes the
@@ -27,99 +27,81 @@ the item on the Internet Archive's Web site::
 
   http://archive.org/details/{identifier}
 
-In Mopidy, you may encounter item identifiers in an album URI's path,
-while individual tracks add the respective file name as their URI's
-fragment.
-
 Besides items containing media files, there are also *collections*,
-which are used to to group related items.  The `Live Music Archive`_,
-for example, is the collection with the identifier *etree*.  An item
+which are used to to group related items.  The `Audio Archive`_, for
+example, is the collection item with the identifier *audio*.  An item
 can be a member of more than one collection, and collections may also
-have sub-collections.  Within the Live Music Archive, there exist
-sub-collections for all artists that gave permission for live show
-recordings to be hosted on archive.org, such as the `Grateful Dead`_
-or the `Smashing Pumpkins`_, while the Live Music Archive itself is a
-sub-collection of the larger `Audio Archive`_.  Within Mopidy,
-collections most prominently show up as top-level directories when
-browsing the Internet Archive, but can also be used to :ref:`exclude
-<exclude>` specific items from searching and browsing [#footnote1]_.
+have sub-collections.  Collections show up as *directories* when
+browsing Mopidy.
 
 
 Browsing the Internet Archive
 ------------------------------------------------------------------------
 
-Starting with version 0.18, Mopidy also provides the possiblity to
-browse directories and tracks.  If your client supports this, there
-should be a virtual directory named *Internet Archive*.  When
-browsing, Internet Archive items are structured into a hierarchy three
-levels deep.  At the top level, you will find the collections
-configured under :confval:`internetarchive/collections`, and you will
-be able to browse individual audio items (albums) and files (tracks)
-within these.
+If your Mopidy client supports browsing, there should be a top-level
+directory named *Internet Archive*.  Beneath that, you will find the
+Internet Archive collections listed in
+:confval:`internetarchive/collections`, and you should be able to
+browse individual audio items (albums) and files (tracks) within
+these.
 
-For practical and performance reasons, the number of audio items that
-will be shown within a collection is limited, e.g. you will not see
-all 144,957 items of the Live Music Archive [#footnote2]_.  The
+For practical and performance reasons, the number of items that will
+be shown within a collection is limited, e.g. you will not see all
+147,929 audio items of the Live Music Archive [#footnote1]_.  The
 :ref:`default configuration <defconf>` sets this limit to 100, but
-this can be changed with :confval:`internetarchive/browse_limit`.
-Items are selected based on popularity by default, i.e. the 100 most
-downloaded items will be listed for each collection.  This can also be
-changed using :confval:`internetarchive/browse_order`, e.g. to always
-show the latest additions to the Archive.
+this can be changed using :confval:`internetarchive/browse_limit`.
+
+To allow browsing collections using different sort criteria, every
+collection provides a number of *views*, virtual subdirectories which
+let you browse the collection's items by popularity, title, publish
+date, and so on.  The default views are set up to resemble the
+archive.org_ Web interface, but can be changed at your own discretion
+with :confval:`internetarchive/browse_views`.
 
 
 Searching the Internet Archive
 ------------------------------------------------------------------------
 
-The Internet Archive only supports searching for items, but not for
+The Internet Archive only supports searching for *items*, but not for
 individual files or tracks.  Therefore, only *albums* will show up
-when searching in Mopidy, which may not be handled correctly by your
-client.  This also means that only album-related search fields are
-supported, i.e. searching for track names or numbers will yield no
-results from the Internet Archive.
+when searching in Mopidy.  This also means that only album-related
+search fields are supported, so searching for track names or numbers
+will yield no results from the Internet Archive.
 
 The number and ordering of search results returned from the Internet
 Archive can be changed with :confval:`internetarchive/search_limit`
-and :confval:`internetarchive/search_order`, similar to the settings
-used for browsing.
+and :confval:`internetarchive/search_order`.  Unless you explicitly
+specify an Internet Archive collection to search within, search scope
+will also be limited to the collections listed in
+:confval:`internetarchive/collections`.
 
 
-Archive Bookmarks
+Archive Favorites
 ------------------------------------------------------------------------
 
 If you have an Internet Archive account - also termed a `Virtual
-Library Card`_ - you can access your `Archive Bookmarks`_ from Mopidy.
-To do so, you need to add your Internet Archive user name to Mopidy's
-configuration as :confval:`internetarchive/username`.  Your bookmarks
-will then appear in the top-level browse directory as *Archive
-Bookmarks*.
-
-.. note::
-
-   It is currently not possible to edit your Archive Bookmarks using
-   Mopidy.  This restriction may be removed in future versions.
+Library Card`_ - you can access your `Archive Favorites`_ from Mopidy.
+To do so, you just need to add the identifier of your favorites
+collection to :confval:`internetarchive/collections`.  Typically, the
+identifier is *fav-{username}*, but you should be able to figure it
+out from the archive.org_ Web site.  When added to
+:confval:`internetarchive/collections`, you will be able to browse and
+search your Archive Favorites just like the other collections listed
+there.
 
 
 .. _FAQ: https://archive.org/about/faqs.php
 
-.. _blog post: http://blog.archive.org/2011/03/31/how-archive-org-items-are-structured/
-
-.. _Live Music Archive: http://archive.org/details/etree
-
-.. _etree: http://archive.org/details/etree
-
-.. _Grateful Dead: http://archive.org/details/GratefulDead
-
-.. _Smashing Pumpkins: http://archive.org/details/SmashingPumpkins
+.. _blog post: https://blog.archive.org/2011/03/31/how-archive-org-items-are-structured/
 
 .. _Audio Archive: https://archive.org/details/audio
 
+.. _archive.org: https://archive.org/
+
 .. _Virtual Library Card: https://archive.org/account/login.createaccount.php
 
-.. _Archive Bookmarks: http://archive.org/bookmarks.php
+.. _Archive Favorites: https://archive.org/bookmarks.php
 
 .. rubric:: Footnotes
 
-.. [#footnote1] If you *really* don't like the Grateful Dead, for example.
-
-.. [#footnote2] As of 2015-09-11.
+.. [#footnote1] As of Dec. 7, 2015.

@@ -16,15 +16,11 @@ Configuration Values
 
    Base URL to access the Internet Archive.
 
-.. confval:: internetarchive/username
-
-   Your archive.org user name.  This is only needed if you want to
-   access your Internet Archive bookmarks from Mopidy.
-
 .. confval:: internetarchive/collections
 
    A list of collection identifiers to show as top-level directories
-   when browsing.
+   when browsing.  These are also used to limit the search scope when
+   no search base is given by Mopidy clients explicitly.
 
 .. confval:: internetarchive/audio_formats
 
@@ -55,10 +51,15 @@ Configuration Values
    This is used to limit the number of items returned when browsing
    the Internet Archive.
 
-.. confval:: internetarchive/browse_order
+.. confval:: internetarchive/browse_views
 
-   The :ref:`sort order<sortorder>` used when browsing the Internet
-   Archive.
+   When browsing Internet Archive collections (or *directories* in
+   Mopidy), this provides a list of virtual subdirectories so results
+   can be retrieved using a particular :ref:`sort order<sortorder>`.
+
+   The format for each entry is ``<fieldname> (asc|desc) | <label>``,
+   where ``<label>`` is a name for the entry to show up in the Mopidy
+   client.
 
 .. confval:: internetarchive/search_limit
 
@@ -71,18 +72,6 @@ Configuration Values
 
    The :ref:`sort order<sortorder>` used when searching the Internet
    Archive.
-
-.. _exclude:
-
-.. confval:: internetarchive/exclude_collections
-
-   A list of collection identifiers to exclude when searching or
-   browsing.
-
-.. confval:: internetarchive/exclude_mediatypes
-
-   A list of Internet Archive media types to exclude when searching or
-   browsing.
 
 .. confval:: internetarchive/cache_size
 

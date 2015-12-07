@@ -1,13 +1,12 @@
 from __future__ import unicode_literals
 
-import re
-
 from setuptools import find_packages, setup
 
 
 def get_version(filename):
+    from re import findall
     with open(filename) as fh:
-        metadata = dict(re.findall("__([a-z]+)__ = '([^']+)'", fh.read()))
+        metadata = dict(findall("__([a-z]+)__ = '([^']+)'", fh.read()))
     return metadata['version']
 
 setup(
