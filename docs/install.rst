@@ -1,9 +1,13 @@
 Installation
 ========================================================================
 
-Mopidy-InternetArchive can be installed using pip_ by running::
+Debian/Ubuntu/Raspbian (jessie): Install the
+``mopidy-internetarchive`` package from `apt.mopidy.com
+<http://apt.mopidy.com/>`_::
 
-    pip install Mopidy-InternetArchive
+  apt-get install mopidy-internetarchive
 
+Otherwise, install the package from `PyPI
+<https://pypi.python.org/pypi>`_::
 
-.. _pip: https://pip.pypa.io/en/latest/
+  pip install Mopidy-Internetarchive

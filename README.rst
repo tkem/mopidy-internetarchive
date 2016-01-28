@@ -2,15 +2,22 @@ Mopidy-InternetArchive
 ========================================================================
 
 Mopidy-InternetArchive is a Mopidy_ extension for playing music from
-the `Internet Archive`_.
+the `Internet Archive <http://archive.org/>`_.
 
 
 Installation
 ------------------------------------------------------------------------
 
-Mopidy-InternetArchive can be installed using pip_ by running::
+Debian/Ubuntu/Raspbian (jessie): Install the
+``mopidy-internetarchive`` package from `apt.mopidy.com
+<http://apt.mopidy.com/>`_::
 
-    pip install Mopidy-InternetArchive
+  apt-get install mopidy-internetarchive
+
+Otherwise, install the package from `PyPI
+<https://pypi.python.org/pypi>`_::
+
+  pip install Mopidy-Internetarchive
 
 
 Project Resources
@@ -51,9 +58,6 @@ Licensed under the `Apache License, Version 2.0`_.
 
 
 .. _Mopidy: http://www.mopidy.com/
-.. _Internet Archive: http://archive.org/
-
-.. _pip: https://pip.pypa.io/en/latest/
 
 .. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/latest/
 .. _Issue Tracker: https://github.com/tkem/mopidy-internetarchive/issues/
