@@ -131,12 +131,12 @@ def test_ref(ref=translator.ref):
 
 
 def test_artists(artists=translator.artists):
-    assert None == artists({})
-    assert None == artists({'artist': ''})
-    assert None == artists({'creator': ''})
-    assert None == artists({'artist': '', 'creator': ''})
-    assert None == artists({'creator': []})
-    assert None == artists({'artist': '', 'creator': []})
+    assert artists({}) is None
+    assert artists({'artist': ''}) is None
+    assert artists({'creator': ''}) is None
+    assert artists({'artist': '', 'creator': ''}) is None
+    assert artists({'creator': []}) is None
+    assert artists({'artist': '', 'creator': []}) is None
     assert [models.Artist(name='foo')] == artists({
         'artist': 'foo'
     })
