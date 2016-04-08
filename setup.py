@@ -5,8 +5,8 @@ from setuptools import find_packages, setup
 
 def get_version(filename):
     from re import findall
-    with open(filename) as fh:
-        metadata = dict(findall("__([a-z]+)__ = '([^']+)'", fh.read()))
+    with open(filename) as f:
+        metadata = dict(findall("__([a-z]+)__ = '([^']+)'", f.read()))
     return metadata['version']
 
 setup(
@@ -27,8 +27,8 @@ setup(
         'setuptools',
         'Mopidy >= 1.1',
         'Pykka >= 1.1',
-        'requests >= 2.0',
         'cachetools >= 1.0',
+        'requests >= 2.0',
         'uritools >= 1.0'
     ],
     entry_points={

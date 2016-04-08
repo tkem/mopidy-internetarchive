@@ -52,7 +52,7 @@ Project Resources
 License
 ------------------------------------------------------------------------
 
-Copyright (c) 2014, 2015 Thomas Kemmer.
+Copyright (c) 2014-2016 Thomas Kemmer.
 
 Licensed under the `Apache License, Version 2.0`_.
 
