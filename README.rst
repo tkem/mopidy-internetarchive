@@ -17,7 +17,7 @@ Debian/Ubuntu/Raspbian (jessie): Install the
 Otherwise, install the package from `PyPI
 <https://pypi.python.org/pypi>`_::
 
-  pip install Mopidy-Internetarchive
+  pip install Mopidy-InternetArchive
 
 
 Project Resources
