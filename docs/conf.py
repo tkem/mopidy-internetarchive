@@ -8,12 +8,12 @@ def setup(app):
 
 def get_version(filename):
     from re import findall
-    with open(filename) as fh:
-        metadata = dict(findall(r"__([a-z]+)__ = '([^']+)'", fh.read()))
+    with open(filename) as f:
+        metadata = dict(findall(r"__([a-z]+)__ = '([^']+)'", f.read()))
     return metadata['version']
 
 project = 'Mopidy-InternetArchive'
-copyright = '2014, 2015 Thomas Kemmer'
+copyright = '2014-2016 Thomas Kemmer'
 version = get_version(b'../mopidy_internetarchive/__init__.py')
 release = version
 
