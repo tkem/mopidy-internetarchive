@@ -12,8 +12,8 @@ to a vast number of high-quality live recordings from the `Live Music
 Archive`_, and thousands of free audiobooks from the LibriVox_
 collection.
 
-For more information, please see Mopidy-InternetArchive's online
-documentation_.
+For more information and installation instructions, please see
+Mopidy-InternetArchive's online documentation_.
 
 
 Project Resources
