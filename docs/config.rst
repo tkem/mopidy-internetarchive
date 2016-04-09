@@ -12,6 +12,10 @@ few modifications to match personal preferences.
 Configuration Values
 ------------------------------------------------------------------------
 
+.. confval:: internetarchive/enabled
+
+   Whether this extension should be enabled or not.
+
 .. confval:: internetarchive/base_url
 
    Base URL to access the Internet Archive.
