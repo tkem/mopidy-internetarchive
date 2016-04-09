@@ -16,27 +16,6 @@ For more information, please see Mopidy-InternetArchive's online
 documentation_.
 
 
-Installation
-------------------------------------------------------------------------
-
-On Debian Linux and Debian-based distributions like Ubuntu or
-Raspbian, install the ``mopidy-internetarchive`` package from
-apt.mopidy.com_::
-
-  apt-get install mopidy-internetarchive
-
-Otherwise, install the Python package from PyPI_::
-
-  pip install Mopidy-InternetArchive
-
-
-Configuration
-------------------------------------------------------------------------
-
-Please refer to the documentation's `Configuration`_ section for a
-discussion of the available configuration values.
-
-
 Project Resources
 ------------------------------------------------------------------------
 
@@ -83,10 +62,7 @@ Licensed under the `Apache License, Version 2.0`_.
 .. _Live Music Archive: https://archive.org/details/etree
 .. _LibriVox: https://archive.org/details/librivoxaudio
 
-.. _apt.mopidy.com: http://apt.mopidy.com/
-.. _PyPI: https://pypi.python.org/pypi/Mopidy-InternetArchive/
 .. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/latest/
-.. _Configuration: http://mopidy-internetarchive.readthedocs.org/en/latest/config.html
 .. _Issue Tracker: https://github.com/tkem/mopidy-internetarchive/issues/
 .. _Source Code: https://github.com/tkem/mopidy-internetarchive/
 .. _Change Log: https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGES.rst
