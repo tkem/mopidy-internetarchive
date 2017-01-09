@@ -115,7 +115,7 @@ def name(obj):
     elif hasattr(title, '__getitem__'):
         return title[0]
     else:
-        return obj['identifier']
+        return obj.get('identifier')
 
 
 def ref(obj, uri=uri):
@@ -173,9 +173,10 @@ def tracks(item, formats, uri=uri):
     track = Track(album=album(item['metadata']))
     tracks = []
     for obj in files(item, formats):
+        filename = obj.get('name')
         tracks.append(track.replace(
-            uri=uri(identifier, obj.get('name')),
-            name=name(obj),
+            uri=uri(identifier, filename),
+            name=obj.get('title', filename),
             artists=artists(obj) or track.album.artists,
             genre=obj.get('genre'),
             track_no=parse_track(obj.get('track')),
