@@ -25,7 +25,7 @@ these.
 
 For practical and performance reasons, the number of items that will
 be shown within a collection is limited, e.g. you will not see all
-158,642 audio items of the Live Music Archive [#footnote1]_.  The
+167,967 audio items of the Live Music Archive [#footnote1]_.  The
 :ref:`default configuration <defconf>` sets this limit to 100, but
 this can be changed using :confval:`internetarchive/browse_limit`.
 
@@ -79,7 +79,7 @@ there.
 
 .. rubric:: Footnotes
 
-.. [#footnote1] As of Apr. 8, 2016.
+.. [#footnote1] As of Jan. 9, 2017.
 
 
 .. _Mopidy: http://www.mopidy.com/
