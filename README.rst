@@ -23,10 +23,6 @@ Project Resources
     :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
     :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/pypi/dm/Mopidy-InternetArchive.svg?style=flat
-    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
-    :alt: Number of PyPI downloads
-
 .. image:: http://img.shields.io/travis/tkem/mopidy-internetarchive/master.svg?style=flat
     :target: https://travis-ci.org/tkem/mopidy-internetarchive/
     :alt: Travis CI build status
