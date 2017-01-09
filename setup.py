@@ -9,6 +9,7 @@ def get_version(filename):
         metadata = dict(findall("__([a-z]+)__ = '([^']+)'", f.read()))
     return metadata['version']
 
+
 setup(
     name='Mopidy-InternetArchive',
     version=get_version('mopidy_internetarchive/__init__.py'),

@@ -100,6 +100,7 @@ class InternetArchiveClient(object):
     class SearchError(Exception):
         pass
 
+
 if __name__ == '__main__':
     import argparse
     import logging
