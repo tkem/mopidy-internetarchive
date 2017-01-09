@@ -128,6 +128,17 @@ def test_ref(ref=translator.ref):
         'mediatype': 'collection',
         'title': 'Foo'
     })
+    # as of Dec 2016, items in oldtimeradio collections return title as list
+    assert models.Ref.album(name='#1', uri='internetarchive:otr') == ref({
+        'identifier': 'otr',
+        'mediatype': 'audio',
+        'title': ['#1', '#2']
+    })
+    assert models.Ref.directory(name='#1', uri='internetarchive:otr') == ref({
+        'identifier': 'otr',
+        'mediatype': 'collection',
+        'title': ['#1', '#2']
+    })
 
 
 def test_artists(artists=translator.artists):

@@ -100,7 +100,6 @@ def parse_uri(uri):
 
 
 def uri(identifier='', filename=None, scheme=Extension.ext_name, **kwargs):
-    # filename may contain whitespace, e.g. PattiSmith1971
     if filename:
         return uritools.uricompose(scheme, path=identifier, fragment=filename)
     elif kwargs:
@@ -109,14 +108,23 @@ def uri(identifier='', filename=None, scheme=Extension.ext_name, **kwargs):
         return '%s:%s' % (scheme, identifier)
 
 
+def name(obj):
+    title = obj.get('title')
+    if isinstance(title, basestring):
+        return title
+    elif hasattr(title, '__getitem__'):
+        return title[0]
+    else:
+        return obj['identifier']
+
+
 def ref(obj, uri=uri):
     identifier = obj['identifier']
     mediatype = obj['mediatype']
-    name = obj.get('title', identifier)
     if mediatype == 'collection':
-        return Ref.directory(name=name, uri=uri(identifier))
+        return Ref.directory(name=name(obj), uri=uri(identifier))
     else:
-        return Ref.album(name=name, uri=uri(identifier))
+        return Ref.album(name=name(obj), uri=uri(identifier))
 
 
 def artists(obj):
@@ -130,10 +138,9 @@ def artists(obj):
 
 
 def album(obj, uri=uri):
-    identifier = obj['identifier']
     return Album(
-        uri=uri(identifier),
-        name=obj.get('title', identifier),
+        uri=uri(obj['identifier']),
+        name=name(obj),
         artists=artists(obj),
         date=parse_date(obj.get('date'))
     )
@@ -166,10 +173,9 @@ def tracks(item, formats, uri=uri):
     track = Track(album=album(item['metadata']))
     tracks = []
     for obj in files(item, formats):
-        name = obj['name']
         tracks.append(track.replace(
-            uri=uri(identifier, name),
-            name=obj.get('title', name),
+            uri=uri(identifier, obj.get('name')),
+            name=name(obj),
             artists=artists(obj) or track.album.artists,
             genre=obj.get('genre'),
             track_no=parse_track(obj.get('track')),
