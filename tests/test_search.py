@@ -7,7 +7,7 @@ def test_search_any(library, client_mock):
     client_mock.search.return_value = client_mock.SearchResult({
         'responseHeader': {
             'params': {
-                'q': 'album'
+                'query': 'album'
             }
         },
         'response': {

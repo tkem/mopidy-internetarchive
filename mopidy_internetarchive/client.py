@@ -84,9 +84,14 @@ class InternetArchiveClient(object):
     class SearchResult(collections.Sequence):
 
         def __init__(self, result):
-            self.query = result['responseHeader']['params']['q']
-            self.rowcount = result['response']['numFound']
-            self.docs = result['response']['docs']
+            response = result['response']
+            self.docs = response.get('docs', [])
+            self.rowcount = response.get('numFound', None)
+            # query is optional, and responseHeader likely to change
+            try:
+                self.query = result['responseHeader']['params']['query']
+            except:
+                self.query = None
 
         def __getitem__(self, key):
             return self.docs[key]
