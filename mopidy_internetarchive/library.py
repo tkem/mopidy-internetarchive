@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import collections
 import logging
 
@@ -17,7 +15,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     )
 
     def __init__(self, config, backend):
-        super(InternetArchiveLibraryProvider, self).__init__(backend)
+        super().__init__(backend)
         self.__collections = config['collections']
         self.__audio_formats = config['audio_formats']
         self.__image_formats = config['image_formats']
@@ -104,7 +102,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             logger.debug('Internet Archive query: %s' % qs)
         # fetch results
         result = self.backend.client.search(
-            '%s AND %s' % (qs, self.__search_filter),
+            f'{qs} AND {self.__search_filter}',
             fields=['identifier', 'title', 'creator', 'date'],
             rows=self.__search_limit,
             sort=self.__search_order
@@ -116,7 +114,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     def __browse_collection(self, identifier, sort=['downloads desc']):
         return list(map(translator.ref, self.backend.client.search(
-            'collection:%s AND %s' % (identifier, self.__browse_filter),
+            f'collection:{identifier} AND {self.__browse_filter}',
             fields=['identifier', 'mediatype', 'title', 'creator'],
             rows=self.__browse_limit,
             sort=sort

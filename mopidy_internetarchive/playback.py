@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from mopidy import backend
 
 from . import translator

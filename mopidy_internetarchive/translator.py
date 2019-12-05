@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import collections
 import datetime
 import logging
@@ -105,7 +103,7 @@ def uri(identifier='', filename=None, scheme=Extension.ext_name, **kwargs):
     elif kwargs:
         return uritools.uricompose(scheme, path=identifier, query=kwargs)
     else:
-        return '%s:%s' % (scheme, identifier)
+        return f'{scheme}:{identifier}'
 
 
 def name(obj):

@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import cachetools
 
 from mopidy import backend, httpclient
@@ -26,7 +24,7 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
     uri_schemes = [Extension.ext_name]
 
     def __init__(self, config, audio):
-        super(InternetArchiveBackend, self).__init__()
+        super().__init__()
         ext_config = config[Extension.ext_name]
 
         self.client = client = InternetArchiveClient(
@@ -34,7 +32,7 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
             retries=ext_config['retries'],
             timeout=ext_config['timeout']
         )
-        product = '%s/%s' % (Extension.dist_name, Extension.version)
+        product = f'{Extension.dist_name}/{Extension.version}'
         client.useragent = httpclient.format_user_agent(product)
         proxy = httpclient.format_proxy(config['proxy'])
         client.proxies.update({'http': proxy, 'https': proxy})

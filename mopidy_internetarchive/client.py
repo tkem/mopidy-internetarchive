@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import collections
 import operator
 import urlparse
@@ -19,7 +17,7 @@ def _session(base_url, retries):
     return session
 
 
-class InternetArchiveClient(object):
+class InternetArchiveClient:
 
     pykka_traversable = True
 
@@ -55,7 +53,7 @@ class InternetArchiveClient(object):
 
     def geturl(self, identifier, filename=None):
         if filename:
-            path = '/download/%s/%s' % (identifier, filename)
+            path = f'/download/{identifier}/{filename}'
         else:
             path = '/download/%s' % identifier
         return urlparse.urljoin(self.__base_url, path)

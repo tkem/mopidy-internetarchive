@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import collections
 import os
 
@@ -7,7 +5,7 @@ from mopidy import config, ext
 
 __version__ = '2.0.3'
 
-SORT_FIELDS = ['%s %s' % (f, o) for o in ('asc', 'desc') for f in (
+SORT_FIELDS = [f'{f} {o}' for o in ('asc', 'desc') for f in (
     'addeddate',
     'avg_rating',
     'call_number',
@@ -72,7 +70,7 @@ class Extension(ext.Extension):
         return config.read(os.path.join(os.path.dirname(__file__), 'ext.conf'))
 
     def get_config_schema(self):
-        schema = super(Extension, self).get_config_schema()
+        schema = super().get_config_schema()
         schema.update(
             base_url=config.String(),
             collections=config.List(),

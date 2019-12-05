@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from mopidy import models
 
 URL = 'http://archive.org/download/album/cover.jpg'
