@@ -1,5 +1,22 @@
+**********************
 Mopidy-InternetArchive
-========================================================================
+**********************
+
+.. image:: https://img.shields.io/pypi/v/Mopidy-InternetArchive
+    :target: https://pypi.org/project/Mopidy-InternetArchive/
+    :alt: Latest PyPI version
+
+.. image:: https://img.shields.io/circleci/build/gh/tkem/mopidy-internetarchive
+    :target: https://circleci.com/gh/tkem/mopidy-internetarchive
+    :alt: CircleCI build status
+
+.. image:: https://img.shields.io/codecov/c/gh/tkem/mopidy-internetarchive
+    :target: https://codecov.io/gh/tkem/mopidy-internetarchive
+    :alt: Test coverage
+
+.. image:: https://img.shields.io/readthedocs/mopidy-internetarchive
+    :target: https://internetarchive.readthedocs.io/
+    :alt: Read the Docs build status
 
 Mopidy-InternetArchive is a Mopidy_ extension for playing music from
 the `Internet Archive`_.
@@ -15,39 +32,6 @@ collection.
 For more information and installation instructions, please see
 Mopidy-InternetArchive's online documentation_.
 
-
-Project Resources
-------------------------------------------------------------------------
-
-.. image:: https://img.shields.io/pypi/v/Mopidy-InternetArchive.svg?style=flat
-    :target: https://pypi.python.org/pypi/Mopidy-InternetArchive/
-    :alt: Latest PyPI version
-
-.. image:: http://img.shields.io/travis/tkem/mopidy-internetarchive/master.svg?style=flat
-    :target: https://travis-ci.org/tkem/mopidy-internetarchive/
-    :alt: Travis CI build status
-
-.. image:: http://img.shields.io/coveralls/tkem/mopidy-internetarchive/master.svg?style=flat
-   :target: https://coveralls.io/r/tkem/mopidy-internetarchive/
-   :alt: Test coverage
-
-.. image:: https://readthedocs.org/projects/mopidy-internetarchive/badge/?version=latest&style=flat
-   :target: http://mopidy-internetarchive.readthedocs.org/en/latest/
-   :alt: Documentation Status
-
-- `Issue Tracker`_
-- `Source Code`_
-- `Change Log`_
-
-
-License
-------------------------------------------------------------------------
-
-Copyright (c) 2014-2017 Thomas Kemmer.
-
-Licensed under the `Apache License, Version 2.0`_.
-
-
 .. _Mopidy: http://www.mopidy.com/
 .. _Internet Archive: http://archive.org
 .. _alternative news programming: https://archive.org/details/audio_news
@@ -57,10 +41,20 @@ Licensed under the `Apache License, Version 2.0`_.
 .. _original music: https://archive.org/details/opensource_audio
 .. _Live Music Archive: https://archive.org/details/etree
 .. _LibriVox: https://archive.org/details/librivoxaudio
-
 .. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/latest/
-.. _Issue Tracker: https://github.com/tkem/mopidy-internetarchive/issues/
-.. _Source Code: https://github.com/tkem/mopidy-internetarchive/
-.. _Change Log: https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGES.rst
 
-.. _Apache License, Version 2.0: http://www.apache.org/licenses/LICENSE-2.0
+
+Project resources
+=================
+
+- `Source code <https://github.com/tkem/mopidy-internetarchive>`_
+- `Issue tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
+- `Changelog <https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGELOG.rst>`_
+
+
+Credits
+=======
+
+- Original author: `Thomas Kemmer <https://github.com/tkem>`__
+- Current maintainer: `Thomas Kemmer <https://github.com/tkem>`__
+- `Contributors <https://github.com/tkem/mopidy-internetarchive/graphs/contributors>`_
