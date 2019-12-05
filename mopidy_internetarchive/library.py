@@ -112,7 +112,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             albums=map(translator.album, result),
         )
 
-    def __browse_collection(self, identifier, sort=["downloads desc"]):
+    def __browse_collection(self, identifier, sort=("downloads desc",)):
         return list(
             map(
                 translator.ref,
