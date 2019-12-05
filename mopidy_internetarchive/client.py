@@ -1,6 +1,6 @@
 import collections
 import operator
-import urlparse
+import urllib.parse
 
 import requests
 
@@ -56,7 +56,7 @@ class InternetArchiveClient:
             path = f"/download/{identifier}/{filename}"
         else:
             path = "/download/%s" % identifier
-        return urlparse.urljoin(self.__base_url, path)
+        return urllib.parse.urljoin(self.__base_url, path)
 
     def search(self, query, fields=None, sort=None, rows=None, start=None):
         response = self.__get(
@@ -77,7 +77,7 @@ class InternetArchiveClient:
 
     def __get(self, path, params=None):
         return self.__session.get(
-            urlparse.urljoin(self.__base_url, path),
+            urllib.parse.urljoin(self.__base_url, path),
             params=params,
             timeout=self.__timeout,
         )
