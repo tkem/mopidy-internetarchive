@@ -1,6 +1,7 @@
 import collections
 
-import mock
+from unittest import mock
+
 import mopidy_internetarchive as ext
 import pytest
 
