@@ -11,26 +11,26 @@ logger = logging.getLogger(__name__)
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
 
     root_directory = models.Ref.directory(
-        uri=translator.uri(''), name='Internet Archive'
+        uri=translator.uri(""), name="Internet Archive"
     )
 
     def __init__(self, config, backend):
         super().__init__(backend)
-        self.__collections = config['collections']
-        self.__audio_formats = config['audio_formats']
-        self.__image_formats = config['image_formats']
+        self.__collections = config["collections"]
+        self.__audio_formats = config["audio_formats"]
+        self.__image_formats = config["image_formats"]
 
-        self.__browse_filter = '(mediatype:collection OR format:(%s))' % (
-            ' OR '.join(map(translator.quote, config['audio_formats']))
+        self.__browse_filter = "(mediatype:collection OR format:(%s))" % (
+            " OR ".join(map(translator.quote, config["audio_formats"]))
         )
-        self.__browse_limit = config['browse_limit']
-        self.__browse_views = config['browse_views']
+        self.__browse_limit = config["browse_limit"]
+        self.__browse_views = config["browse_views"]
 
-        self.__search_filter = 'format:(%s)' % (
-            ' OR '.join(map(translator.quote, config['audio_formats']))
+        self.__search_filter = "format:(%s)" % (
+            " OR ".join(map(translator.quote, config["audio_formats"]))
         )
-        self.__search_limit = config['search_limit']
-        self.__search_order = config['search_order']
+        self.__search_limit = config["search_limit"]
+        self.__search_order = config["search_order"]
 
         self.__directories = collections.OrderedDict()
         self.__lookup = {}  # track cache for faster lookup
@@ -54,14 +54,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             if identifier:
                 urimap[identifier].append(uri)
             else:
-                logger.debug('Not retrieving images for %s', uri)
+                logger.debug("Not retrieving images for %s", uri)
         # retrieve item images and map back to uris
         results = {}
         for identifier, uris in urimap.items():
             try:
                 item = self.backend.client.getitem(identifier)
             except Exception as e:
-                logger.error('Error retrieving images for %s: %s', uris, e)
+                logger.error("Error retrieving images for %s: %s", uris, e)
             else:
                 results.update(dict.fromkeys(uris, self.__images(item)))
         return results
@@ -96,35 +96,40 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         try:
             qs = translator.query(query, uris, exact)
         except ValueError as e:
-            logger.info('Not searching %s: %s', Extension.dist_name, e)
+            logger.info("Not searching %s: %s", Extension.dist_name, e)
             return None
         else:
-            logger.debug('Internet Archive query: %s' % qs)
+            logger.debug("Internet Archive query: %s" % qs)
         # fetch results
         result = self.backend.client.search(
-            f'{qs} AND {self.__search_filter}',
-            fields=['identifier', 'title', 'creator', 'date'],
+            f"{qs} AND {self.__search_filter}",
+            fields=["identifier", "title", "creator", "date"],
             rows=self.__search_limit,
-            sort=self.__search_order
+            sort=self.__search_order,
         )
         return models.SearchResult(
             uri=translator.uri(q=result.query),
-            albums=map(translator.album, result)
+            albums=map(translator.album, result),
         )
 
-    def __browse_collection(self, identifier, sort=['downloads desc']):
-        return list(map(translator.ref, self.backend.client.search(
-            f'collection:{identifier} AND {self.__browse_filter}',
-            fields=['identifier', 'mediatype', 'title', 'creator'],
-            rows=self.__browse_limit,
-            sort=sort
-        )))
+    def __browse_collection(self, identifier, sort=["downloads desc"]):
+        return list(
+            map(
+                translator.ref,
+                self.backend.client.search(
+                    f"collection:{identifier} AND {self.__browse_filter}",
+                    fields=["identifier", "mediatype", "title", "creator"],
+                    rows=self.__browse_limit,
+                    sort=sort,
+                ),
+            )
+        )
 
     def __browse_item(self, identifier):
         if identifier in self.__directories:
             return self.__views(identifier)
         item = self.backend.client.getitem(identifier)
-        if item['metadata']['mediatype'] == 'collection':
+        if item["metadata"]["mediatype"] == "collection":
             return self.__views(identifier)
         tracks = self.__tracks(item)
         self.__lookup = {t.uri: t for t in tracks}  # cache tracks
@@ -133,17 +138,16 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
     def __browse_root(self):
         if not self.__directories:
             result = self.backend.client.search(
-                'mediatype:collection AND identifier:(%s)' % (
-                    ' OR '.join(self.__collections)
-                ),
-                fields=['identifier', 'mediatype', 'title']
+                "mediatype:collection AND identifier:(%s)"
+                % (" OR ".join(self.__collections)),
+                fields=["identifier", "mediatype", "title"],
             )
-            objs = {obj['identifier']: obj for obj in result}
+            objs = {obj["identifier"]: obj for obj in result}
             for identifier in self.__collections:
                 try:
                     obj = objs[identifier]
                 except KeyError as e:
-                    logger.warn('Internet Archive collection not found: %s', e)
+                    logger.warn("Internet Archive collection not found: %s", e)
                 else:
                     self.__directories[identifier] = translator.ref(obj)
         return list(self.__directories.values())

@@ -2,11 +2,11 @@ import collections
 import operator
 import urlparse
 
-import cachetools
-
 import requests
 
-BASE_URL = 'http://archive.org/'
+import cachetools
+
+BASE_URL = "http://archive.org/"
 
 
 def _session(base_url, retries):
@@ -33,40 +33,43 @@ class InternetArchiveClient:
 
     @property
     def useragent(self):
-        return self.__session.headers.get('User-Agent')
+        return self.__session.headers.get("User-Agent")
 
     @useragent.setter
     def useragent(self, value):
-        self.__session.headers['User-Agent'] = value
+        self.__session.headers["User-Agent"] = value
 
-    @cachetools.cachedmethod(operator.attrgetter('cache'))
+    @cachetools.cachedmethod(operator.attrgetter("cache"))
     def getitem(self, identifier):
-        obj = self.__get('/metadata/%s' % identifier).json()
+        obj = self.__get("/metadata/%s" % identifier).json()
         if not obj:
             raise LookupError(identifier)
-        elif 'error' in obj:
-            raise LookupError(obj['error'])
-        elif 'result' in obj:
-            return obj['result']
+        elif "error" in obj:
+            raise LookupError(obj["error"])
+        elif "result" in obj:
+            return obj["result"]
         else:
             return obj
 
     def geturl(self, identifier, filename=None):
         if filename:
-            path = f'/download/{identifier}/{filename}'
+            path = f"/download/{identifier}/{filename}"
         else:
-            path = '/download/%s' % identifier
+            path = "/download/%s" % identifier
         return urlparse.urljoin(self.__base_url, path)
 
     def search(self, query, fields=None, sort=None, rows=None, start=None):
-        response = self.__get('/advancedsearch.php', params={
-            'q': query,
-            'fl[]': fields,
-            'sort[]': sort,
-            'rows': rows,
-            'start': start,
-            'output': 'json'
-        })
+        response = self.__get(
+            "/advancedsearch.php",
+            params={
+                "q": query,
+                "fl[]": fields,
+                "sort[]": sort,
+                "rows": rows,
+                "start": start,
+                "output": "json",
+            },
+        )
         if response.content:
             return self.SearchResult(response.json())
         else:
@@ -76,18 +79,17 @@ class InternetArchiveClient:
         return self.__session.get(
             urlparse.urljoin(self.__base_url, path),
             params=params,
-            timeout=self.__timeout
+            timeout=self.__timeout,
         )
 
     class SearchResult(collections.Sequence):
-
         def __init__(self, result):
-            response = result['response']
-            self.docs = response.get('docs', [])
-            self.rowcount = response.get('numFound', None)
+            response = result["response"]
+            self.docs = response.get("docs", [])
+            self.rowcount = response.get("numFound", None)
             # query is optional, and responseHeader likely to change
             try:
-                self.query = result['responseHeader']['params']['query']
+                self.query = result["responseHeader"]["params"]["query"]
             except:
                 self.query = None
 
@@ -104,24 +106,24 @@ class InternetArchiveClient:
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
     import logging
     import json
     import sys
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('arg', metavar='PATH | USER | QUERY')
-    parser.add_argument('-B', '--base-url', default='http://archive.org')
-    parser.add_argument('-e', '--encoding', default=sys.getdefaultencoding())
-    parser.add_argument('-f', '--fields', nargs='+')
-    parser.add_argument('-i', '--indent', type=int, default=2)
-    parser.add_argument('-q', '--query', action='store_true')
-    parser.add_argument('-r', '--rows', type=int)
-    parser.add_argument('-R', '--retries', type=int, default=0)
-    parser.add_argument('-s', '--sort', nargs='+')
-    parser.add_argument('-t', '--timeout', type=float)
-    parser.add_argument('-v', '--verbose', action='store_true')
+    parser.add_argument("arg", metavar="PATH | USER | QUERY")
+    parser.add_argument("-B", "--base-url", default="http://archive.org")
+    parser.add_argument("-e", "--encoding", default=sys.getdefaultencoding())
+    parser.add_argument("-f", "--fields", nargs="+")
+    parser.add_argument("-i", "--indent", type=int, default=2)
+    parser.add_argument("-q", "--query", action="store_true")
+    parser.add_argument("-r", "--rows", type=int)
+    parser.add_argument("-R", "--retries", type=int, default=0)
+    parser.add_argument("-s", "--sort", nargs="+")
+    parser.add_argument("-t", "--timeout", type=float)
+    parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARN)
@@ -133,4 +135,4 @@ if __name__ == '__main__':
     else:
         result = client.getitem(args.arg)
     json.dump(result, sys.stdout, default=vars, indent=args.indent)
-    sys.stdout.write('\n')
+    sys.stdout.write("\n")
