@@ -28,6 +28,8 @@ ISODATE_RE = re.compile(
     flags=re.VERBOSE,
 )
 
+QUOTE_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
+
 _QUERYMAP = {
     "any": lambda values: (" AND ".join(map(quote, values))),
     "album": lambda values: ("title:(%s)" % " ".join(map(quote, values))),
@@ -211,5 +213,5 @@ def query(query, uris=None, exact=False):
     return " AND ".join(terms)
 
 
-def quote(value, re=re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')):
+def quote(value, re=QUOTE_RE):
     return '"%s"' % re.sub(r"\\\1", value)

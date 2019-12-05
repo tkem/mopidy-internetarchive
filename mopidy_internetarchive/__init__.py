@@ -39,10 +39,15 @@ SORT_FIELDS = [
 
 
 class ConfigMap(config.ConfigValue):
+
+    default_keys = config.String()
+
+    default_values = config.String()
+
     def __init__(
         self,
-        keys=config.String(),
-        values=config.String(),
+        keys=default_keys,
+        values=default_values,
         delim="|",
         optional=False,
     ):
