@@ -48,7 +48,7 @@ def parse_bitrate(string, default=None):
     if string:
         try:
             return int(float(string) * 1000)
-        except:
+        except Exception:
             logger.warn("Invalid Internet Archive bitrate: %r", string)
     return default
 
@@ -57,7 +57,7 @@ def parse_date(string, default=None):
     if string:
         try:
             return "-".join(ISODATE_RE.match(string).groups("01"))
-        except:
+        except Exception:
             logger.warn("Invalid Internet Archive date: %r", string)
     return default
 
@@ -68,7 +68,7 @@ def parse_length(string, default=None):
             groups = DURATION_RE.match(string).groupdict("0")
             d = datetime.timedelta(**{k: int(v) for k, v in groups.items()})
             return int(d.total_seconds() * 1000)
-        except:
+        except Exception:
             logger.warn("Invalid Internet Archive length: %r", string)
     return default
 
@@ -77,7 +77,7 @@ def parse_mtime(string, default=None):
     if string:
         try:
             return int(string)
-        except:
+        except Exception:
             logger.warn("Invalid Internet Archive mtime: %r", string)
     return default
 
@@ -86,7 +86,7 @@ def parse_track(string, default=None):
     if string:
         try:
             return int(string.partition("/")[0])
-        except:
+        except Exception:
             logger.warn("Invalid Internet Archive track: %r", string)
     return default
 

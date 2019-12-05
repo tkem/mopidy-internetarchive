@@ -90,7 +90,7 @@ class InternetArchiveClient:
             # query is optional, and responseHeader likely to change
             try:
                 self.query = result["responseHeader"]["params"]["query"]
-            except:
+            except LookupError:
                 self.query = None
 
         def __getitem__(self, key):
