@@ -107,7 +107,7 @@ def uri(identifier="", filename=None, scheme=Extension.ext_name, **kwargs):
 
 def name(obj):
     title = obj.get("title")
-    if isinstance(title, basestring):
+    if isinstance(title, str):
         return title
     elif hasattr(title, "__getitem__"):
         return title[0]
@@ -128,7 +128,7 @@ def artists(obj):
     artist = obj.get("artist", obj.get("creator"))
     if not artist:
         return None
-    elif isinstance(artist, basestring):
+    elif isinstance(artist, str):
         return [Artist(name=artist)]
     else:
         return [Artist(name=name) for name in artist]
