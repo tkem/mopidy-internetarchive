@@ -1,4 +1,5 @@
-import collections
+from collections.abc import Sequence
+
 import operator
 import urllib.parse
 
@@ -82,7 +83,7 @@ class InternetArchiveClient:
             timeout=self.__timeout,
         )
 
-    class SearchResult(collections.Sequence):
+    class SearchResult(Sequence):
         def __init__(self, result):
             response = result["response"]
             self.docs = response.get("docs", [])
