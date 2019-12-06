@@ -192,7 +192,7 @@ def query(query, uris=None, exact=False):
     if exact:
         raise ValueError("Exact queries not supported")
     terms = []
-    for key, values in query.iteritems() if query else []:
+    for key, values in query.items() if query else []:
         try:
             term = _QUERYMAP[key](values)
         except KeyError:
