@@ -116,7 +116,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("arg", metavar="PATH | USER | QUERY")
     parser.add_argument("-B", "--base-url", default="http://archive.org")
-    parser.add_argument("-e", "--encoding", default=sys.getdefaultencoding())
     parser.add_argument("-f", "--fields", nargs="+")
     parser.add_argument("-i", "--indent", type=int, default=2)
     parser.add_argument("-q", "--query", action="store_true")
@@ -131,8 +130,7 @@ if __name__ == "__main__":
 
     client = InternetArchiveClient(args.base_url, args.retries, args.timeout)
     if args.query:
-        query = args.arg.decode(args.encoding)
-        result = client.search(query, args.fields, args.sort, args.rows)
+        result = client.search(args.arg, args.fields, args.sort, args.rows)
     else:
         result = client.getitem(args.arg)
     json.dump(result, sys.stdout, default=vars, indent=args.indent)
