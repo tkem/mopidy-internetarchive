@@ -68,11 +68,13 @@ class ConfigMap(config.ConfigValue):
     def serialize(self, value, display=False):
         if not value:
             return b""
-        items = [
-            (self.__keys.serialize(k), self.__values.serialize(v))
-            for k, v in value.items()
-        ]
-        return config.List().serialize(map(self.__delim.join, items))
+        d = config.String().serialize(self.__delim)
+        return config.List().serialize(
+            [
+                self.__keys.serialize(k) + d + self.__values.serialize(v)
+                for k, v in value.items()
+            ]
+        )
 
 
 class Extension(ext.Extension):

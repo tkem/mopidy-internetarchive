@@ -101,7 +101,7 @@ def test_serialize():
     value = collections.OrderedDict([("a", 1), ("b", 2), ("c", 3)])
     result = type.serialize(value)
     assert isinstance(result, bytes)
-    assert re.match(r"\s*a|1\n\s*b|2\n\s*c|3", result)
+    assert re.match(br"\s*a|1\n\s*b|2\n\s*c|3", result)
 
 
 def test_serialize_none():
