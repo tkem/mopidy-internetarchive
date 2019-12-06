@@ -1,9 +1,9 @@
+************
 Installation
-========================================================================
+************
 
-Debian/Ubuntu/Raspbian (jessie): Install the
-``mopidy-internetarchive`` package from `apt.mopidy.com
-<http://apt.mopidy.com/>`_::
+Debian/Ubuntu/Raspbian: Install the ``mopidy-internetarchive`` package
+from `apt.mopidy.com <http://apt.mopidy.com/>`_::
 
   apt-get install mopidy-internetarchive
 

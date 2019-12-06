@@ -1,5 +1,6 @@
+*************
 Configuration
-========================================================================
+*************
 
 This extension has a number of configuration values that can be
 tweaked.  However, the :ref:`default configuration <defconf>` contains
@@ -10,7 +11,7 @@ few modifications to match personal preferences.
 .. _confvals:
 
 Configuration Values
-------------------------------------------------------------------------
+====================
 
 .. confval:: internetarchive/enabled
 
@@ -97,7 +98,7 @@ Configuration Values
 .. _sortorder:
 
 Sort Order Fields
-------------------------------------------------------------------------
+=================
 
 The sort order for searching and browsing is given as ``<fieldname>
 (asc|desc)``, where ``<fieldname>`` is one of:
@@ -130,7 +131,7 @@ The sort order for searching and browsing is given as ``<fieldname>
 .. _defconf:
 
 Default Configuration
-------------------------------------------------------------------------
+=====================
 
 For reference, this is the default configuration shipped with
 Mopidy-InternetArchive release |release|:

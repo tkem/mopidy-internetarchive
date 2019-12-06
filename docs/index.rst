@@ -1,5 +1,6 @@
+**********************
 Mopidy-InternetArchive
-========================================================================
+**********************
 
 Mopidy-InternetArchive is a Mopidy_ extension for playing music from
 the `Internet Archive`_.
@@ -14,7 +15,7 @@ collection.
 
 
 Browsing the Internet Archive
-------------------------------------------------------------------------
+=============================
 
 If your Mopidy client supports browsing, there should be a top-level
 directory named *Internet Archive*.  Beneath that, you will find the
@@ -38,7 +39,7 @@ with :confval:`internetarchive/browse_views`.
 
 
 Searching the Internet Archive
-------------------------------------------------------------------------
+==============================
 
 The Internet Archive only supports searching for *items*, but not for
 individual files or tracks.  Therefore, only *albums* will show up
@@ -55,7 +56,7 @@ will also be limited to the collections listed in
 
 
 Archive Favorites
-------------------------------------------------------------------------
+=================
 
 If you have an Internet Archive account - also termed a `Virtual
 Library Card`_ - you can access your `Archive Favorites`_ from Mopidy.
