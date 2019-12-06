@@ -147,7 +147,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 try:
                     obj = objs[identifier]
                 except KeyError as e:
-                    logger.warn("Internet Archive collection not found: %s", e)
+                    logger.warning("Collection not found: %s", e)
                 else:
                     self.__directories[identifier] = translator.ref(obj)
         return list(self.__directories.values())
