@@ -90,7 +90,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         # sanitize uris
         uris = set(uris or [self.root_directory.uri])
         if self.root_directory.uri in uris:
-            uris.update(map(translator.uri, self.__collections))
+            uris.update(translator.uri(c) for c in self.__collections)
             uris.remove(self.root_directory.uri)
         # translate query
         try:
@@ -107,23 +107,22 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
             rows=self.__search_limit,
             sort=self.__search_order,
         )
+        logger.debug("Internet Archive result: %s" % list(result))
         return models.SearchResult(
             uri=translator.uri(q=result.query),
-            albums=map(translator.album, result),
+            albums=[translator.album(item) for item in result],
         )
 
     def __browse_collection(self, identifier, sort=("downloads desc",)):
-        return list(
-            map(
-                translator.ref,
-                self.backend.client.search(
-                    f"collection:{identifier} AND {self.__browse_filter}",
-                    fields=["identifier", "mediatype", "title", "creator"],
-                    rows=self.__browse_limit,
-                    sort=sort,
-                ),
+        return [
+            translator.ref(res)
+            for res in self.backend.client.search(
+                f"collection:{identifier} AND {self.__browse_filter}",
+                fields=["identifier", "mediatype", "title", "creator"],
+                rows=self.__browse_limit,
+                sort=sort,
             )
-        )
+        ]
 
     def __browse_item(self, identifier):
         if identifier in self.__directories:
