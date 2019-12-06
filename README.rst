@@ -15,7 +15,7 @@ Mopidy-InternetArchive
     :alt: Test coverage
 
 .. image:: https://img.shields.io/readthedocs/mopidy-internetarchive
-    :target: https://internetarchive.readthedocs.io/
+    :target: https://mopidy-internetarchive.readthedocs.io/
     :alt: Read the Docs build status
 
 Mopidy-InternetArchive is a Mopidy_ extension for playing music from
