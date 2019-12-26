@@ -67,7 +67,7 @@ class ConfigMap(config.ConfigValue):
 
     def serialize(self, value, display=False):
         if not value:
-            return b""
+            return ""
         d = config.String().serialize(self.__delim)
         return config.List().serialize(
             [
