@@ -6,17 +6,25 @@ Mopidy-InternetArchive
     :target: https://pypi.org/project/Mopidy-InternetArchive/
     :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/circleci/build/gh/tkem/mopidy-internetarchive
-    :target: https://circleci.com/gh/tkem/mopidy-internetarchive
-    :alt: CircleCI build status
+.. image:: https://img.shields.io/github/workflow/status/tkem/mopidy-internetarchive/CI
+    :target: https://github.com/tkem/mopidy-internetarchive/actions
+    :alt: CI build status
+
+.. image:: https://img.shields.io/readthedocs/mopidy-internetarchive
+    :target: https://mopidy-internetarchive.readthedocs.io/
+    :alt: Read the Docs build status
 
 .. image:: https://img.shields.io/codecov/c/gh/tkem/mopidy-internetarchive
     :target: https://codecov.io/gh/tkem/mopidy-internetarchive
     :alt: Test coverage
 
-.. image:: https://img.shields.io/readthedocs/mopidy-internetarchive
-    :target: https://mopidy-internetarchive.readthedocs.io/
-    :alt: Read the Docs build status
+.. image:: https://img.shields.io/github/license/tkem/mopidy-internetarchive
+   :target: https://raw.github.com/tkem/mopidy-internetarchive/master/LICENSE
+   :alt: License
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
+   :alt: Code style: black
 
 Mopidy-InternetArchive is a Mopidy_ extension for playing music from
 the `Internet Archive`_.
