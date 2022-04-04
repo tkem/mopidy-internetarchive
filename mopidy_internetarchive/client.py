@@ -7,7 +7,7 @@ import requests
 
 import cachetools
 
-BASE_URL = "http://archive.org/"
+BASE_URL = "https://archive.org/"
 
 
 def _session(base_url, retries):
@@ -115,7 +115,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("arg", metavar="PATH | USER | QUERY")
-    parser.add_argument("-B", "--base-url", default="http://archive.org")
+    parser.add_argument("-B", "--base-url", default="https://archive.org")
     parser.add_argument("-f", "--fields", nargs="+")
     parser.add_argument("-i", "--indent", type=int, default=2)
     parser.add_argument("-q", "--query", action="store_true")
