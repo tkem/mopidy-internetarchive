@@ -1,11 +1,9 @@
 import collections
 import pathlib
 
-import pkg_resources
-
 from mopidy import config, ext
 
-__version__ = pkg_resources.get_distribution("Mopidy-InternetArchive").version
+__version__ = "3.1.0"
 
 SORT_FIELDS = [
     f"{f} {o}"

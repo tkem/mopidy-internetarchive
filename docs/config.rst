@@ -136,7 +136,7 @@ Default Configuration
 For reference, this is the default configuration shipped with
 Mopidy-InternetArchive release |release|:
 
-.. literalinclude:: ../mopidy_internetarchive/ext.conf
+.. literalinclude:: ../src/mopidy_internetarchive/ext.conf
    :language: ini
 
 
