@@ -5,6 +5,8 @@ v3.1.0 (UNRELEASED)
 
 - Fix unit tests on Python >= 3.12.
 
+- Fix track bitrate resolution.
+
 - Change default base URL to ``https://archive.org/``.
 
 - Modernize build environment and packages structure.

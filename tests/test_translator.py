@@ -17,8 +17,11 @@ def test_parse_bitrate():
     assert translator.parse_bitrate("tmp", 42) == 42
 
     assert translator.parse_bitrate("0") == 0
-    assert translator.parse_bitrate("1") == 1000
-    assert translator.parse_bitrate("42.123") == 42123
+    assert translator.parse_bitrate("1") == 1
+    assert translator.parse_bitrate("42.123") == 42
+    assert translator.parse_bitrate("128") == 128
+    assert translator.parse_bitrate("128.0") == 128
+    assert translator.parse_bitrate("128.001") == 128
 
 
 def test_parse_date():

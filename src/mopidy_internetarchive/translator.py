@@ -46,9 +46,10 @@ logger = logging.getLogger(__name__)
 
 
 def parse_bitrate(string, default=None):
+    # apparently archive.org items already report bitrate in kbit/s
     if string:
         try:
-            return int(float(string) * 1000)
+            return int(float(string))
         except Exception:
             logger.warning("Invalid Internet Archive bitrate: %r", string)
     return default
