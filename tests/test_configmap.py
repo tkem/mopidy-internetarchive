@@ -3,8 +3,9 @@ import re
 
 from mopidy.config import types
 
-import pytest
 from mopidy_internetarchive import ConfigMap
+
+import pytest
 
 
 def test_deserialize():

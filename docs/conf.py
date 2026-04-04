@@ -17,6 +17,7 @@ def get_version():
         partial_version = ".".join(full_version.split(".")[:2])
         return full_version, partial_version
 
+
 project = "Mopidy-InternetArchive"
 copyright = "2014-2026 Thomas Kemmer"
 release, version = get_version()

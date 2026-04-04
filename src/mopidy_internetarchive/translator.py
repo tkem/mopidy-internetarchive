@@ -3,8 +3,9 @@ import datetime
 import logging
 import re
 
-import uritools
 from mopidy.models import Album, Artist, Image, Ref, Track
+
+import uritools
 
 from . import Extension
 
@@ -33,9 +34,7 @@ QUOTE_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 _QUERYMAP = {
     "any": lambda values: (" AND ".join(map(quote, values))),
     "album": lambda values: ("title:(%s)" % " ".join(map(quote, values))),
-    "albumartist": lambda values: (
-        "creator:(%s)" % " ".join(map(quote, values))
-    ),
+    "albumartist": lambda values: ("creator:(%s)" % " ".join(map(quote, values))),
     "artist": lambda values: ("creator:(%s)" % " ".join(map(quote, values))),
     "date": lambda values: (
         # TODO: sanitize, not quote date! date:(2014-01-01) gives error

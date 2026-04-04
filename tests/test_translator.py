@@ -1,7 +1,8 @@
 from mopidy import models
 
-import pytest
 from mopidy_internetarchive import translator
+
+import pytest
 
 
 def test_parse_bitrate():
@@ -95,9 +96,7 @@ def test_uri(uri=translator.uri):
     assert "internetarchive:item#file%201.mp3" == uri("item", "file 1.mp3")
     assert "internetarchive:?q=foo" == uri(q="foo")
     assert "internetarchive:?q=foo%20AND%20bar" == uri(q="foo AND bar")
-    assert "internetarchive:item?sort=title%20asc" == uri(
-        "item", sort="title asc"
-    )
+    assert "internetarchive:item?sort=title%20asc" == uri("item", sort="title asc")
 
 
 def test_ref(ref=translator.ref):
@@ -134,9 +133,7 @@ def test_artists(artists=translator.artists):
     assert artists({"artist": "", "creator": []}) is None
     assert [models.Artist(name="foo")] == artists({"artist": "foo"})
     assert [models.Artist(name="foo")] == artists({"creator": "foo"})
-    assert [models.Artist(name="foo")] == artists(
-        {"artist": "foo", "creator": "bar"}
-    )
+    assert [models.Artist(name="foo")] == artists({"artist": "foo", "creator": "bar"})
     assert [models.Artist(name="foo")] == artists({"creator": ["foo"]})
     assert [models.Artist(name="foo"), models.Artist(name="bar")] == artists(
         {"creator": ["foo", "bar"]}
@@ -149,9 +146,7 @@ def test_artists(artists=translator.artists):
 def test_album(album=translator.album):
     model = models.Album(name="foo", uri="internetarchive:foo")
     assert model == album({"identifier": "foo"})
-    assert model.replace(name="Foo") == album(
-        {"identifier": "foo", "title": "Foo"}
-    )
+    assert model.replace(name="Foo") == album({"identifier": "foo", "title": "Foo"})
     assert model.replace(artists=[models.Artist(name="bar")]) == album(
         {"identifier": "foo", "creator": "bar"}
     )

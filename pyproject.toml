@@ -44,7 +44,5 @@ version = {attr = "mopidy_internetarchive.__version__"}
 max-line-length = 80
 exclude = [".git", ".tox", "build"]
 select = ["C", "E", "F", "W", "B", "B950", "I", "N"]
-# F401: imported but unused (submodule shims)
 # E501: line too long (black)
-#ignore = ["F401", "E501"]
-ignore = ["F401", "E501", "E265", "E305", "BLK100", "I100", "I201", "I202"]
+ignore = ["E501"]

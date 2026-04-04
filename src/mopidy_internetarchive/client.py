@@ -1,11 +1,10 @@
-from collections.abc import Sequence
-
 import operator
 import urllib.parse
-
-import requests
+from collections.abc import Sequence
 
 import cachetools
+
+import requests
 
 BASE_URL = "https://archive.org/"
 

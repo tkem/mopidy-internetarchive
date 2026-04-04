@@ -1,8 +1,8 @@
 import collections
-
 from unittest import mock
 
 import mopidy_internetarchive as ext
+
 import pytest
 
 
@@ -89,6 +89,4 @@ def library(backend_mock, config):
 
 @pytest.fixture
 def playback(audio_mock, backend_mock):
-    return ext.playback.InternetArchivePlaybackProvider(
-        audio_mock, backend_mock
-    )
+    return ext.playback.InternetArchivePlaybackProvider(audio_mock, backend_mock)
