@@ -1,13 +1,15 @@
-v3.0.2 (UNRELEASED)
+v3.1.0 (UNRELEASED)
 ===================
+
+- Add support for Python <= 3.14.
+
+- Fix unit tests on Python >= 3.12.
+
+- Change default base URL to ``https://archive.org/``.
 
 - Modernize build environment and packages structure.
 
 - Update CI environment.
-
-- Support Python 3.11 to 3.14.
-
-- Change default base URL to ``https://archive.org/``.
 
 
 v3.0.1 (2022-04-03)
