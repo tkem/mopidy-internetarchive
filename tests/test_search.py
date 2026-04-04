@@ -23,7 +23,7 @@ def test_search_any(library, client_mock):
         }
     )
     result = library.search(dict(any=["album"]))
-    assert client_mock.search.called_once()
+    client_mock.search.assert_called_once()
     assert result == models.SearchResult(
         uri="internetarchive:?q=album",
         albums=[

@@ -49,7 +49,7 @@ def test_has_root_directory(library):
 
 def test_browse_root_directory(library, client_mock, root_collections):
     results = library.browse(library.root_directory.uri)
-    assert client_mock.search.called_once()
+    client_mock.search.assert_called_once()
     assert results == root_collections
 
 
@@ -99,7 +99,7 @@ def test_browse_view(library, client_mock):
         }
     )
     results = library.browse("internetarchive:audio?sort=title%20asc")
-    assert library.backend.client.search.called_once()
+    library.backend.client.search.assert_called_once()
     assert results == [
         models.Ref.album(name="Album", uri="internetarchive:album"),
         models.Ref.directory(name="Directory", uri="internetarchive:directory"),
