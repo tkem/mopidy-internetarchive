@@ -1,3 +1,15 @@
+v3.0.2 (UNRELEASED)
+===================
+
+- Modernize build environment and packages structure.
+
+- Update CI environment.
+
+- Support Python 3.11 to 3.14.
+
+- Change default base URL to ``https://archive.org/``.
+
+
 v3.0.1 (2022-04-03)
 ===================
 

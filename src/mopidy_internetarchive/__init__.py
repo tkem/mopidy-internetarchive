@@ -3,7 +3,7 @@ import pathlib
 
 from mopidy import config, ext
 
-__version__ = "3.1.0"
+__version__ = "3.0.2"
 
 SORT_FIELDS = [
     f"{f} {o}"
