@@ -6,13 +6,13 @@ Mopidy-InternetArchive
     :target: https://pypi.org/project/Mopidy-InternetArchive/
     :alt: Latest PyPI version
 
-.. image:: https://img.shields.io/github/workflow/status/tkem/mopidy-internetarchive/CI
-    :target: https://github.com/tkem/mopidy-internetarchive/actions
-    :alt: CI build status
+.. image:: https://img.shields.io/github/actions/workflow/status/tkem/mopidy-internetarchive/ci.yml
+   :target: https://github.com/tkem/mopidy-internetarchive/actions/workflows/ci.yml
+   :alt: CI build status
 
 .. image:: https://img.shields.io/readthedocs/mopidy-internetarchive
-    :target: https://mopidy-internetarchive.readthedocs.io/
-    :alt: Read the Docs build status
+   :target: https://mopidy-internetarchive.readthedocs.io/
+   :alt: Documentation build status
 
 .. image:: https://img.shields.io/codecov/c/gh/tkem/mopidy-internetarchive
     :target: https://codecov.io/gh/tkem/mopidy-internetarchive
