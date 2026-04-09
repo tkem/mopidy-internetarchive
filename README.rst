@@ -37,8 +37,44 @@ to a vast number of high-quality live recordings from the `Live Music
 Archive`_, and thousands of free audiobooks from the LibriVox_
 collection.
 
-For more information and installation instructions, please see
-Mopidy-InternetArchive's online documentation_.
+
+Installation
+============
+
+Debian/Ubuntu/Raspbian: Install the ``mopidy-internetarchive`` package
+from `apt.mopidy.com <http://apt.mopidy.com/>`_::
+
+  apt-get install mopidy-internetarchive
+
+Otherwise, install the package from PyPI::
+
+  pip install Mopidy-Internetarchive
+
+
+Project resources
+=================
+
+- `Documentation`_
+- `Issue tracker`_
+- `Source code`_
+- `Change log`_
+
+
+License
+=======
+
+Copyright (c) 2014-2026 Thomas Kemmer.
+
+Licensed under the `Apache License, Version 2.0`_.
+
+
+Credits
+=======
+
+- Original author: `Thomas Kemmer <https://github.com/tkem>`__
+- Current maintainer: `Thomas Kemmer <https://github.com/tkem>`__
+- `Contributors <https://github.com/tkem/mopidy-internetarchive/graphs/contributors>`_
+
 
 .. _Mopidy: http://www.mopidy.com/
 .. _Internet Archive: http://archive.org
@@ -49,20 +85,12 @@ Mopidy-InternetArchive's online documentation_.
 .. _original music: https://archive.org/details/opensource_audio
 .. _Live Music Archive: https://archive.org/details/etree
 .. _LibriVox: https://archive.org/details/librivoxaudio
+
+.. _PyPI: https://pypi.org/project/mopidy-internetarchive/
+
 .. _Documentation: http://mopidy-internetarchive.readthedocs.org/en/latest/
+.. _Source code: https://github.com/tkem/mopidy-internetarchive/
+.. _Issue tracker: https://github.com/tkem/mopidy-internetarchive/issues
+.. _Change log: https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGELOG.rst
 
-
-Project resources
-=================
-
-- `Source code <https://github.com/tkem/mopidy-internetarchive>`_
-- `Issue tracker <https://github.com/tkem/mopidy-internetarchive/issues>`_
-- `Changelog <https://github.com/tkem/mopidy-internetarchive/blob/master/CHANGELOG.rst>`_
-
-
-Credits
-=======
-
-- Original author: `Thomas Kemmer <https://github.com/tkem>`__
-- Current maintainer: `Thomas Kemmer <https://github.com/tkem>`__
-- `Contributors <https://github.com/tkem/mopidy-internetarchive/graphs/contributors>`_
+.. _Apache License, Version 2.0: https://raw.github.com/tkem/mopidy-internetarchive/master/LICENSE
