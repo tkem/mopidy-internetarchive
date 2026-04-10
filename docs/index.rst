@@ -21,23 +21,22 @@ Browsing the Internet Archive
 
 If your Mopidy client supports browsing, there should be a top-level
 directory named *Internet Archive*.  Beneath that, you will find the
-Internet Archive collections listed in
-:confval:`internetarchive/collections`, and you should be able to
-browse individual audio items (albums) and files (tracks) within
-these.
+Internet Archive collections listed in :confval:`collections`, and you
+should be able to browse individual audio items (albums) and files
+(tracks) within these.
 
 For practical and performance reasons, the number of items that will
 be shown within a collection is limited, e.g. you will not see all
 167,967 audio items of the Live Music Archive [#footnote1]_.  The
 :ref:`default configuration <defconf>` sets this limit to 100, but
-this can be changed using :confval:`internetarchive/browse_limit`.
+this can be changed using :confval:`browse_limit`.
 
 To allow browsing collections using different sort criteria, every
 collection provides a number of *views*, virtual subdirectories which
 let you browse the collection's items by popularity, title, publish
 date, and so on.  The default views are set up to resemble the
 archive.org_ Web interface, but can be changed at your own discretion
-with :confval:`internetarchive/browse_views`.
+with :confval:`browse_views`.
 
 
 Searching the Internet Archive
@@ -50,11 +49,10 @@ search fields are supported, so searching for track names or numbers
 will yield no results from the Internet Archive.
 
 The number and ordering of search results returned from the Internet
-Archive can be changed with :confval:`internetarchive/search_limit`
-and :confval:`internetarchive/search_order`.  Unless you explicitly
-specify an Internet Archive collection to search within, search scope
-will also be limited to the collections listed in
-:confval:`internetarchive/collections`.
+Archive can be changed with :confval:`search_limit` and
+:confval:`search_order`.  Unless you explicitly specify an Internet
+Archive collection to search within, search scope will also be limited
+to the collections listed in :confval:`collections`.
 
 
 Archive Favorites
@@ -63,12 +61,11 @@ Archive Favorites
 If you have an Internet Archive account - also termed a `Virtual
 Library Card`_ - you can access your `Archive Favorites`_ from Mopidy.
 To do so, you just need to add the identifier of your favorites
-collection to :confval:`internetarchive/collections`.  Typically, the
-identifier is *fav-{username}*, but you should be able to figure it
-out from the archive.org_ Web site.  When added to
-:confval:`internetarchive/collections`, you will be able to browse and
-search your Archive Favorites just like the other collections listed
-there.
+collection to :confval:`collections`.  Typically, the identifier is
+*fav-{username}*, but you should be able to figure it out from the
+archive.org_ Web site.  When added to :confval:`collections`, you will
+be able to browse and search your Archive Favorites just like the
+other collections listed there.
 
 
 *************
@@ -86,21 +83,21 @@ few modifications to match personal preferences.
 Configuration Values
 ====================
 
-.. confval:: internetarchive/enabled
+.. confval:: enabled
 
    Whether this extension should be enabled or not.
 
-.. confval:: internetarchive/base_url
+.. confval:: base_url
 
    Base URL to access the Internet Archive.
 
-.. confval:: internetarchive/collections
+.. confval:: collections
 
    A list of collection identifiers to show as top-level directories
    when browsing.  These are also used to limit the search scope when
    no search base is given by Mopidy clients explicitly.
 
-.. confval:: internetarchive/audio_formats
+.. confval:: audio_formats
 
    A list of audio file formats, in order of preference.
 
@@ -112,7 +109,7 @@ Configuration Values
    recommended that you stick to lossy audio formats for streaming
    through Mopidy.
 
-.. confval:: internetarchive/image_formats
+.. confval:: image_formats
 
    A list of image file formats, in order of preference.
 
@@ -122,14 +119,14 @@ Configuration Values
    album art provided by Mopidy-InternetArchive or other Mopidy
    extensions.
 
-.. confval:: internetarchive/browse_limit
+.. confval:: browse_limit
 
    The maximum number of browse results.
 
    This is used to limit the number of items returned when browsing
    the Internet Archive.
 
-.. confval:: internetarchive/browse_views
+.. confval:: browse_views
 
    When browsing Internet Archive collections (or *directories* in
    Mopidy), this provides a list of virtual subdirectories so results
@@ -139,31 +136,31 @@ Configuration Values
    where ``<label>`` is a name for the entry to show up in the Mopidy
    client.
 
-.. confval:: internetarchive/search_limit
+.. confval:: search_limit
 
    The maximum number of search results.
 
    This is used to limit the number of items returned when searching
    the Internet Archive.
 
-.. confval:: internetarchive/search_order
+.. confval:: search_order
 
    The :ref:`sort order<sortorder>` used when searching the Internet
    Archive.
 
-.. confval:: internetarchive/cache_size
+.. confval:: cache_size
 
    The number of Internet Archive items to cache in memory.
 
-.. confval:: internetarchive/cache_ttl
+.. confval:: cache_ttl
 
    The cache time-to-live in seconds.
 
-.. confval:: internetarchive/retries
+.. confval:: retries
 
    The maximum number of retries each HTTP connection should attempt.
 
-.. confval:: internetarchive/timeout
+.. confval:: timeout
 
    The timeout in seconds for HTTP requests to the Internet Archive.
 
