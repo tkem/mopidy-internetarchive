@@ -169,15 +169,16 @@ def images(item, formats, uri=uri):
 
 def tracks(item, formats, uri=uri):
     identifier = item["metadata"]["identifier"]
-    track = Track(album=album(item["metadata"]))
+    itemalbum = album(item["metadata"])
     tracks = []
     for obj in files(item, formats):
         filename = obj.get("name")
         tracks.append(
-            track.replace(
+            Track(
                 uri=uri(identifier, filename),
                 name=obj.get("title", filename),
-                artists=artists(obj) or track.album.artists,
+                artists=artists(obj) or itemalbum.artists,
+                album=itemalbum,
                 genre=obj.get("genre"),
                 track_no=parse_track(obj.get("track")),
                 length=parse_length(obj.get("length")),
