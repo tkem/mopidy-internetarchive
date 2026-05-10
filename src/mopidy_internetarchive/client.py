@@ -18,7 +18,6 @@ def _session(base_url, retries):
 
 
 class InternetArchiveClient:
-
     pykka_traversable = True
 
     def __init__(self, base_url=BASE_URL, retries=0, timeout=None):

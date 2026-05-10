@@ -32,10 +32,10 @@ ISODATE_RE = re.compile(
 QUOTE_RE = re.compile(r'([+!(){}\[\]^"~*?:\\]|\&\&|\|\|)')
 
 _QUERYMAP = {
-    "any": lambda values: (" AND ".join(map(quote, values))),
-    "album": lambda values: ("title:(%s)" % " ".join(map(quote, values))),
-    "albumartist": lambda values: ("creator:(%s)" % " ".join(map(quote, values))),
-    "artist": lambda values: ("creator:(%s)" % " ".join(map(quote, values))),
+    "any": lambda values: " AND ".join(map(quote, values)),
+    "album": lambda values: "title:(%s)" % " ".join(map(quote, values)),
+    "albumartist": lambda values: "creator:(%s)" % " ".join(map(quote, values)),
+    "artist": lambda values: "creator:(%s)" % " ".join(map(quote, values)),
     "date": lambda values: (
         # TODO: sanitize, not quote date! date:(2014-01-01) gives error
         " AND ".join("date:%s" % quote(value) for value in values)

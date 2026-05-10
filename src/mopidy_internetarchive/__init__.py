@@ -37,7 +37,6 @@ SORT_FIELDS = [
 
 
 class ConfigMap(config.ConfigValue):
-
     default_keys = config.String()
 
     default_values = config.String()
@@ -76,7 +75,6 @@ class ConfigMap(config.ConfigValue):
 
 
 class Extension(ext.Extension):
-
     dist_name = "Mopidy-InternetArchive"
     ext_name = "internetarchive"
     version = __version__

@@ -20,7 +20,6 @@ def _cache(cache_size=None, cache_ttl=None, **kwargs):
 
 
 class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
-
     uri_schemes = [Extension.ext_name]
 
     def __init__(self, config, audio):

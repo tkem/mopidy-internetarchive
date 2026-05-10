@@ -9,7 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
-
     root_directory = models.Ref.directory(
         uri=translator.uri(""), name="Internet Archive"
     )
