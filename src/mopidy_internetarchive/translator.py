@@ -129,11 +129,11 @@ def ref(obj, uri=uri):
 def artists(obj):
     artist = obj.get("artist", obj.get("creator"))
     if not artist:
-        return None
+        return frozenset()
     elif isinstance(artist, str):
-        return [Artist(name=artist)]
+        return frozenset({Artist(name=artist)})
     else:
-        return [Artist(name=name) for name in artist]
+        return frozenset({Artist(name=name) for name in artist})
 
 
 def album(obj, uri=uri):

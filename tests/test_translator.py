@@ -128,20 +128,22 @@ def test_ref(ref=translator.ref):
 
 
 def test_artists(artists=translator.artists):
-    assert artists({}) is None
-    assert artists({"artist": ""}) is None
-    assert artists({"creator": ""}) is None
-    assert artists({"artist": "", "creator": ""}) is None
-    assert artists({"creator": []}) is None
-    assert artists({"artist": "", "creator": []}) is None
-    assert [models.Artist(name="foo")] == artists({"artist": "foo"})
-    assert [models.Artist(name="foo")] == artists({"creator": "foo"})
-    assert [models.Artist(name="foo")] == artists({"artist": "foo", "creator": "bar"})
-    assert [models.Artist(name="foo")] == artists({"creator": ["foo"]})
-    assert [models.Artist(name="foo"), models.Artist(name="bar")] == artists(
+    assert artists({}) == frozenset()
+    assert artists({"artist": ""}) == frozenset()
+    assert artists({"creator": ""}) == frozenset()
+    assert artists({"artist": "", "creator": ""}) == frozenset()
+    assert artists({"creator": []}) == frozenset()
+    assert artists({"artist": "", "creator": []}) == frozenset()
+    assert frozenset({models.Artist(name="foo")}) == artists({"artist": "foo"})
+    assert frozenset({models.Artist(name="foo")}) == artists({"creator": "foo"})
+    assert frozenset({models.Artist(name="foo")}) == artists(
+        {"artist": "foo", "creator": "bar"}
+    )
+    assert frozenset({models.Artist(name="foo")}) == artists({"creator": ["foo"]})
+    assert frozenset({models.Artist(name="foo"), models.Artist(name="bar")}) == artists(
         {"creator": ["foo", "bar"]}
     )
-    assert [models.Artist(name="foo")] == artists(
+    assert frozenset({models.Artist(name="foo")}) == artists(
         {"artist": "foo", "creator": ["bar", "baz"]}
     )
 
