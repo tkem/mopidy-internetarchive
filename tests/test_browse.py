@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false
 from mopidy import models
 
 COLLECTION = {

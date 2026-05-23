@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false, reportUnhashable=false
 from mopidy import models
 
 from mopidy_internetarchive import translator

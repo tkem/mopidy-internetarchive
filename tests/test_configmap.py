@@ -1,3 +1,4 @@
+# pyright: reportArgumentType=false
 import collections
 import re
 

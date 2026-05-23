@@ -1,6 +1,7 @@
 import cachetools
 
 from mopidy import backend, httpclient
+from mopidy.types import UriScheme
 
 import pykka
 
@@ -20,7 +21,7 @@ def _cache(cache_size=None, cache_ttl=None, **kwargs):
 
 
 class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
-    uri_schemes = [Extension.ext_name]
+    uri_schemes = [UriScheme(Extension.ext_name)]
 
     def __init__(self, config, audio):
         super().__init__()
@@ -34,7 +35,7 @@ class InternetArchiveBackend(pykka.ThreadingActor, backend.Backend):
         product = f"{Extension.dist_name}/{Extension.version}"
         client.useragent = httpclient.format_user_agent(product)
         proxy = httpclient.format_proxy(config["proxy"])
-        client.proxies.update({"http": proxy, "https": proxy})
+        client.proxies.update({"http": proxy, "https": proxy})  # type: ignore[reportCallIssue,reportArgumentType]
         client.cache = _cache(**ext_config)
 
         self.library = InternetArchiveLibraryProvider(ext_config, self)

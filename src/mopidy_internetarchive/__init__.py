@@ -56,7 +56,7 @@ class ConfigMap(config.ConfigValue):
     def deserialize(self, value):
         dict = collections.OrderedDict()
         for s in config.List(optional=self.__optional).deserialize(value):
-            parts = s.partition(self.__delim)
+            parts = s.partition(self.__delim)  # type: ignore[reportAttributeAccessIssue]
             key = self.__keys.deserialize(parts[0])
             val = self.__values.deserialize(parts[2])
             dict[key] = val
@@ -67,7 +67,7 @@ class ConfigMap(config.ConfigValue):
             return ""
         d = config.String().serialize(self.__delim)
         return config.List().serialize(
-            [
+            [  # type: ignore[reportArgumentType]
                 self.__keys.serialize(k) + d + self.__values.serialize(v)
                 for k, v in value.items()
             ]

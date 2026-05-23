@@ -1,14 +1,22 @@
+from __future__ import annotations
+
 import collections
 import logging
+from typing import TYPE_CHECKING
 
 from mopidy import backend, models
 
 from . import Extension, translator
 
+if TYPE_CHECKING:
+    from .backend import InternetArchiveBackend
+
 logger = logging.getLogger(__name__)
 
 
 class InternetArchiveLibraryProvider(backend.LibraryProvider):
+    backend: InternetArchiveBackend  # type: ignore[assignment]
+
     root_directory = models.Ref.directory(
         uri=translator.uri(""), name="Internet Archive"
     )
@@ -86,6 +94,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         self.__lookup.clear()
 
     def search(self, query=None, uris=None, exact=False):
+        assert self.root_directory is not None
         # sanitize uris
         uris = set(uris or [self.root_directory.uri])
         if self.root_directory.uri in uris:
@@ -109,7 +118,7 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         logger.debug("Internet Archive result: %s" % list(result))
         return models.SearchResult(
             uri=translator.uri(q=result.query),
-            albums=[translator.album(item) for item in result],
+            albums=[translator.album(item) for item in result],  # type: ignore[reportArgumentType]
         )
 
     def __browse_collection(self, identifier, sort=("downloads desc",)):

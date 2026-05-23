@@ -5,6 +5,7 @@ from collections.abc import Sequence
 import cachetools
 
 import requests
+from requests.adapters import HTTPAdapter
 
 BASE_URL = "https://archive.org/"
 
@@ -12,7 +13,7 @@ BASE_URL = "https://archive.org/"
 def _session(base_url, retries):
     # TODO: backoff?
     session = requests.Session()
-    adapter = requests.adapters.HTTPAdapter(max_retries=retries)
+    adapter = HTTPAdapter(max_retries=retries)
     session.mount(base_url, adapter)
     return session
 
@@ -24,7 +25,7 @@ class InternetArchiveClient:
         self.__base_url = base_url
         self.__session = _session(base_url, retries)
         self.__timeout = timeout
-        self.cache = None  # public
+        self.cache: cachetools.Cache | None = None  # public
 
     @property
     def proxies(self):

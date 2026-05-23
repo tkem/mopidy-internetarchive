@@ -4,6 +4,7 @@ import logging
 import re
 
 from mopidy.models import Album, Artist, Image, Ref, Track
+from mopidy.types import Uri
 
 import uritools
 
@@ -58,7 +59,10 @@ def parse_bitrate(string, default=None):
 def parse_date(string, default=None):
     if string:
         try:
-            return "-".join(ISODATE_RE.match(string).groups("01"))
+            m = ISODATE_RE.match(string)
+            if m is None:
+                raise ValueError(string)
+            return "-".join(m.groups("01"))
         except Exception:
             logger.warning("Invalid Internet Archive date: %r", string)
     return default
@@ -67,7 +71,10 @@ def parse_date(string, default=None):
 def parse_length(string, default=None):
     if string:
         try:
-            groups = DURATION_RE.match(string).groupdict("0")
+            m = DURATION_RE.match(string)
+            if m is None:
+                raise ValueError(string)
+            groups = m.groupdict("0")
             d = datetime.timedelta(**{k: int(v) for k, v in groups.items()})
             return int(d.total_seconds() * 1000)
         except Exception:
@@ -98,13 +105,13 @@ def parse_uri(uri):
     return parts.path, parts.getfragment(), parts.getquerydict()
 
 
-def uri(identifier="", filename=None, scheme=Extension.ext_name, **kwargs):
+def uri(identifier="", filename=None, scheme=Extension.ext_name, **kwargs) -> Uri:
     if filename:
-        return uritools.uricompose(scheme, path=identifier, fragment=filename)
+        return Uri(uritools.uricompose(scheme, path=identifier, fragment=filename))
     elif kwargs:
-        return uritools.uricompose(scheme, path=identifier, query=kwargs)
+        return Uri(uritools.uricompose(scheme, path=identifier, query=kwargs))  # type: ignore[reportArgumentType]
     else:
-        return f"{scheme}:{identifier}"
+        return Uri(f"{scheme}:{identifier}")
 
 
 def name(obj):
@@ -131,9 +138,9 @@ def artists(obj):
     if not artist:
         return frozenset()
     elif isinstance(artist, str):
-        return frozenset({Artist(name=artist)})
+        return frozenset({Artist(name=artist)})  # type: ignore[reportUnhashable]
     else:
-        return frozenset({Artist(name=name) for name in artist})
+        return frozenset({Artist(name=name) for name in artist})  # type: ignore[reportUnhashable]
 
 
 def album(obj, uri=uri):
@@ -141,7 +148,7 @@ def album(obj, uri=uri):
         uri=uri(obj["identifier"]),
         name=name(obj),
         artists=artists(obj),
-        date=parse_date(obj.get("date")),
+        date=parse_date(obj.get("date")),  # type: ignore[reportArgumentType]
     )
 
 
@@ -181,7 +188,7 @@ def tracks(item, formats, uri=uri):
                 album=itemalbum,
                 genre=obj.get("genre"),
                 track_no=parse_track(obj.get("track")),
-                length=parse_length(obj.get("length")),
+                length=parse_length(obj.get("length")),  # type: ignore[reportArgumentType]
                 bitrate=parse_bitrate(obj.get("bitrate")),
                 last_modified=parse_mtime(obj.get("mtime")),
             )
