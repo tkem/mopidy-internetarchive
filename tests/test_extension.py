@@ -20,12 +20,9 @@ def test_get_config_schema():
     assert "audio_formats" in schema
     assert "base_url" in schema
     assert "browse_limit" in schema
-    assert "browse_order" in schema
     assert "cache_size" in schema
     assert "cache_ttl" in schema
     assert "collections" in schema
-    assert "exclude_collections" in schema
-    assert "exclude_mediatypes" in schema
     assert "image_formats" in schema
     assert "retries" in schema
     assert "search_limit" in schema

@@ -97,11 +97,6 @@ class Extension(ext.Extension):
             cache_ttl=config.Integer(minimum=0, optional=True),
             retries=config.Integer(minimum=0),
             timeout=config.Integer(minimum=0, optional=True),
-            # no longer used
-            browse_order=config.Deprecated(),
-            exclude_collections=config.Deprecated(),
-            exclude_mediatypes=config.Deprecated(),
-            username=config.Deprecated(),
         )
         return schema
 
