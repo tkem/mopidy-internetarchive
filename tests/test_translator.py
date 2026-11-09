@@ -1,8 +1,7 @@
+import pytest
 from mopidy import models
 
 from mopidy_internetarchive import translator
-
-import pytest
 
 
 def test_parse_bitrate():

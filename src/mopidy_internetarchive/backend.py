@@ -1,8 +1,6 @@
 import cachetools
-
-from mopidy import backend, httpclient
-
 import pykka
+from mopidy import backend, httpclient
 
 from . import Extension
 from .client import InternetArchiveClient

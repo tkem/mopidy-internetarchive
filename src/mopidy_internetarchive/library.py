@@ -56,13 +56,13 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
                 logger.debug("Not retrieving images for %s", uri)
         # retrieve item images and map back to uris
         results = {}
-        for identifier, uris in urimap.items():
+        for identifier, item_uris in urimap.items():
             try:
                 item = self.backend.client.getitem(identifier)
             except Exception as e:
-                logger.error("Error retrieving images for %s: %s", uris, e)
+                logger.error("Error retrieving images for %s: %s", item_uris, e)
             else:
-                results.update(dict.fromkeys(uris, self.__images(item)))
+                results.update(dict.fromkeys(item_uris, self.__images(item)))
         return results
 
     def lookup(self, uri):

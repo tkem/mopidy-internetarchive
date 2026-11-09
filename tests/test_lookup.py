@@ -1,6 +1,5 @@
-from mopidy import models
-
 import pytest
+from mopidy import models
 
 ITEM = {
     "files": [

@@ -22,7 +22,7 @@ def test_search_any(library, client_mock):
             },
         }
     )
-    result = library.search(dict(any=["album"]))
+    result = library.search({"any": ["album"]})
     client_mock.search.assert_called_once()
     assert result == models.SearchResult(
         uri="internetarchive:?q=album",
@@ -34,6 +34,6 @@ def test_search_any(library, client_mock):
 
 
 def test_search_unknown(library, client_mock):
-    result = library.search(dict(foo=["bar"]))
+    result = library.search({"foo": ["bar"]})
     client_mock.search.assert_not_called()
     assert result is None

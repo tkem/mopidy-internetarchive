@@ -1,11 +1,10 @@
 import collections
 import re
 
+import pytest
 from mopidy.config import types
 
 from mopidy_internetarchive import ConfigMap
-
-import pytest
 
 
 def test_deserialize():
