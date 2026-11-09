@@ -3,7 +3,6 @@ import urllib.parse
 from collections.abc import Sequence
 
 import cachetools
-
 import requests
 
 BASE_URL = "https://archive.org/"
@@ -107,8 +106,8 @@ class InternetArchiveClient:
 
 if __name__ == "__main__":
     import argparse
-    import logging
     import json
+    import logging
     import sys
 
     parser = argparse.ArgumentParser()
@@ -124,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARN)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.WARNING)
 
     client = InternetArchiveClient(args.base_url, args.retries, args.timeout)
     if args.query:

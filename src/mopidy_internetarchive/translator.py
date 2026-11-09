@@ -3,9 +3,8 @@ import datetime
 import logging
 import re
 
-from mopidy.models import Album, Artist, Image, Ref, Track
-
 import uritools
+from mopidy.models import Album, Artist, Image, Ref, Track
 
 from . import Extension
 

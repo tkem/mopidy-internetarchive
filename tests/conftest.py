@@ -1,9 +1,9 @@
 import collections
 from unittest import mock
 
-import mopidy_internetarchive as ext
-
 import pytest
+
+import mopidy_internetarchive as ext
 
 
 @pytest.fixture
