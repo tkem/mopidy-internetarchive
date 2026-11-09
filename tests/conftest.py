@@ -4,6 +4,10 @@ from unittest import mock
 import pytest
 
 import mopidy_internetarchive as ext
+import mopidy_internetarchive.backend
+import mopidy_internetarchive.client
+import mopidy_internetarchive.library
+import mopidy_internetarchive.playback
 
 
 @pytest.fixture
