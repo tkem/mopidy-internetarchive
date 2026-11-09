@@ -1,4 +1,3 @@
-import pytest
 from mopidy import models
 
 ITEM = {
@@ -76,6 +75,5 @@ def test_lookup_refresh(library, client_mock):
 
 def test_lookup_unknown(library, client_mock):
     client_mock.getitem.side_effect = LookupError("null")
-    with pytest.raises(LookupError):
-        library.lookup("internetarchive:null")
+    assert library.lookup("internetarchive:null") == []
     client_mock.getitem.assert_called_once_with("null")
