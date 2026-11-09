@@ -35,15 +35,19 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         self.__lookup = {}  # track cache for faster lookup
 
     def browse(self, uri):
-        identifier, filename, query = translator.parse_uri(uri)
-        if filename:
+        try:
+            identifier, filename, query = translator.parse_uri(uri)
+            if filename:
+                return []
+            elif identifier and query:
+                return self.__browse_collection(identifier, **query)
+            elif identifier:
+                return self.__browse_item(identifier)
+            else:
+                return self.__browse_root()
+        except Exception as e:
+            logger.error("Error browsing %s: %s", uri, e)
             return []
-        elif identifier and query:
-            return self.__browse_collection(identifier, **query)
-        elif identifier:
-            return self.__browse_item(identifier)
-        else:
-            return self.__browse_root()
 
     def get_images(self, uris):
         # map uris to item identifiers
@@ -71,11 +75,14 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         except KeyError:
             logger.debug("Lookup cache miss for %r", uri)
         identifier, filename, _ = translator.parse_uri(uri)
-        if identifier:
+        if not identifier:
+            return []
+        try:
             tracks = self.__tracks(self.backend.client.getitem(identifier))
             self.__lookup = trackmap = {t.uri: t for t in tracks}
             return [trackmap[uri]] if filename else tracks
-        else:
+        except Exception as e:
+            logger.error("Error looking up %s: %s", uri, e)
             return []
 
     def refresh(self, uri=None):
@@ -100,12 +107,16 @@ class InternetArchiveLibraryProvider(backend.LibraryProvider):
         else:
             logger.debug("Internet Archive query: %s" % qs)
         # fetch results
-        result = self.backend.client.search(
-            f"{qs} AND {self.__search_filter}",
-            fields=["identifier", "title", "creator", "date"],
-            rows=self.__search_limit,
-            sort=self.__search_order,
-        )
+        try:
+            result = self.backend.client.search(
+                f"{qs} AND {self.__search_filter}",
+                fields=["identifier", "title", "creator", "date"],
+                rows=self.__search_limit,
+                sort=self.__search_order,
+            )
+        except Exception as e:
+            logger.error("Error searching %s: %s", Extension.dist_name, e)
+            return models.SearchResult()
         logger.debug("Internet Archive result: %s" % list(result))
         return models.SearchResult(
             uri=translator.uri(q=result.query),
