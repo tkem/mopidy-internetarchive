@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "Mopidy-InternetArchive"
+dynamic = ["version"]
 description = "Mopidy extension for playing music from the Internet Archive"
 authors = [
     {name = "Thomas Kemmer", email = "tkemmer@computer.org"}
@@ -32,7 +33,6 @@ dependencies = [
     "requests >= 2.32",
     "uritools >= 4.0.3",
 ]
-dynamic = ["version"]
 
 [project.entry-points."mopidy.ext"]
 internetarchive = "mopidy_internetarchive:Extension"
