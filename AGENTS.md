@@ -28,14 +28,16 @@ Coverage is reported to Codecov and is not complete; see `.github/copilot-review
 ## Code Style
 
 - `ruff check` and `ruff format` with the default rules; `[tool.ruff.lint]` in
-  `pyproject.toml` ignores `BLE001` (lenient parsing logs and falls back on
-  purpose), `RUF012` (Mopidy's class attributes) and `UP031`. Do not add `noqa`.
+  `pyproject.toml` ignores `BLE001` (errors are logged and replaced by empty or
+  default results on purpose), `RUF012` (Mopidy's class attributes) and `UP031`.
+  Do not add `noqa`.
 - No type annotations in `src/`; keep the code compatible with pyright's
   `standard` mode where it is cheap to do so.
 - Private state uses double-underscore names (`self.__lookup`); all HTTP goes
   through `InternetArchiveClient`, which returns decoded JSON or a `SearchResult`.
-- Log with `logger.error("... %s", arg)`, never f-strings; the `translator.parse_*`
-  helpers log a warning and return their default for malformed metadata.
+- Log with `logger.error("... %s", arg)`, never f-strings, and never raise from
+  `browse()`, `lookup()`, `get_images()` or `search()`: Mopidy clients expect an
+  empty result. The `translator.parse_*` helpers log and return their default.
 - Docs (`docs/index.rst`): wrap prose at column 70, two spaces after a sentence,
   `confval` entries for every setting in `ext.conf`. Keep `README.rst` in sync.
 
